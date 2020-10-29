@@ -22,10 +22,10 @@
 #include <google/protobuf/arena.h>
 #include <google/protobuf/arenastring.h>
 #include <google/protobuf/generated_message_util.h>
-#include <google/protobuf/metadata.h>
 #include <google/protobuf/message_lite.h>
 #include <google/protobuf/repeated_field.h>
 #include <google/protobuf/extension_set.h>
+#include <google/protobuf/generated_enum_util.h>
 // @@protoc_insertion_point(includes)
 
 namespace vector_tile {
@@ -36,9 +36,9 @@ void protobuf_AssignDesc_vector_5ftile_2eproto();
 void protobuf_ShutdownFile_vector_5ftile_2eproto();
 
 class Tile;
-class Tile_Value;
 class Tile_Feature;
 class Tile_Layer;
+class Tile_Value;
 
 enum Tile_GeomType {
   Tile_GeomType_UNKNOWN = 0,
@@ -66,13 +66,20 @@ class Tile_Value : public ::google::protobuf::MessageLite {
   }
 
   inline const ::std::string& unknown_fields() const {
-    return _unknown_fields_;
+    return _unknown_fields_.Get(
+        &::google::protobuf::internal::GetEmptyStringAlreadyInited());
   }
 
   inline ::std::string* mutable_unknown_fields() {
-    return &_unknown_fields_;
+    return _unknown_fields_.Mutable(
+        &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+        GetArenaNoVirtual());
   }
 
+  inline ::google::protobuf::Arena* GetArena() const { return GetArenaNoVirtual(); }
+  inline void* GetMaybeArenaPointer() const {
+    return MaybeArenaPtr();
+  }
   static const Tile_Value& default_instance();
 
   #ifdef GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER
@@ -85,6 +92,7 @@ class Tile_Value : public ::google::protobuf::MessageLite {
   }
   #endif
 
+  void UnsafeArenaSwap(Tile_Value* other);
   void Swap(Tile_Value* other);
 
   // implements Message ----------------------------------------------
@@ -110,6 +118,11 @@ class Tile_Value : public ::google::protobuf::MessageLite {
   void SharedDtor();
   void SetCachedSize(int size) const;
   void InternalSwap(Tile_Value* other);
+  protected:
+  explicit Tile_Value(::google::protobuf::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::google::protobuf::Arena* arena);
   private:
   inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
     return _arena_ptr_;
@@ -126,58 +139,61 @@ class Tile_Value : public ::google::protobuf::MessageLite {
   // accessors -------------------------------------------------------
 
   // optional string string_value = 1;
-  inline bool has_string_value() const;
-  inline void clear_string_value();
+  bool has_string_value() const;
+  void clear_string_value();
   static const int kStringValueFieldNumber = 1;
-  inline const ::std::string& string_value() const;
-  inline void set_string_value(const ::std::string& value);
-  inline void set_string_value(const char* value);
-  inline void set_string_value(const char* value, size_t size);
-  inline ::std::string* mutable_string_value();
-  inline ::std::string* release_string_value();
-  inline void set_allocated_string_value(::std::string* string_value);
+  const ::std::string& string_value() const;
+  void set_string_value(const ::std::string& value);
+  void set_string_value(const char* value);
+  void set_string_value(const char* value, size_t size);
+  ::std::string* mutable_string_value();
+  ::std::string* release_string_value();
+  void set_allocated_string_value(::std::string* string_value);
+  ::std::string* unsafe_arena_release_string_value();
+  void unsafe_arena_set_allocated_string_value(
+      ::std::string* string_value);
 
   // optional float float_value = 2;
-  inline bool has_float_value() const;
-  inline void clear_float_value();
+  bool has_float_value() const;
+  void clear_float_value();
   static const int kFloatValueFieldNumber = 2;
-  inline float float_value() const;
-  inline void set_float_value(float value);
+  float float_value() const;
+  void set_float_value(float value);
 
   // optional double double_value = 3;
-  inline bool has_double_value() const;
-  inline void clear_double_value();
+  bool has_double_value() const;
+  void clear_double_value();
   static const int kDoubleValueFieldNumber = 3;
-  inline double double_value() const;
-  inline void set_double_value(double value);
+  double double_value() const;
+  void set_double_value(double value);
 
   // optional int64 int_value = 4;
-  inline bool has_int_value() const;
-  inline void clear_int_value();
+  bool has_int_value() const;
+  void clear_int_value();
   static const int kIntValueFieldNumber = 4;
-  inline ::google::protobuf::int64 int_value() const;
-  inline void set_int_value(::google::protobuf::int64 value);
+  ::google::protobuf::int64 int_value() const;
+  void set_int_value(::google::protobuf::int64 value);
 
   // optional uint64 uint_value = 5;
-  inline bool has_uint_value() const;
-  inline void clear_uint_value();
+  bool has_uint_value() const;
+  void clear_uint_value();
   static const int kUintValueFieldNumber = 5;
-  inline ::google::protobuf::uint64 uint_value() const;
-  inline void set_uint_value(::google::protobuf::uint64 value);
+  ::google::protobuf::uint64 uint_value() const;
+  void set_uint_value(::google::protobuf::uint64 value);
 
   // optional sint64 sint_value = 6;
-  inline bool has_sint_value() const;
-  inline void clear_sint_value();
+  bool has_sint_value() const;
+  void clear_sint_value();
   static const int kSintValueFieldNumber = 6;
-  inline ::google::protobuf::int64 sint_value() const;
-  inline void set_sint_value(::google::protobuf::int64 value);
+  ::google::protobuf::int64 sint_value() const;
+  void set_sint_value(::google::protobuf::int64 value);
 
   // optional bool bool_value = 7;
-  inline bool has_bool_value() const;
-  inline void clear_bool_value();
+  bool has_bool_value() const;
+  void clear_bool_value();
   static const int kBoolValueFieldNumber = 7;
-  inline bool bool_value() const;
-  inline void set_bool_value(bool value);
+  bool bool_value() const;
+  void set_bool_value(bool value);
 
   GOOGLE_PROTOBUF_EXTENSION_ACCESSORS(Tile_Value)
   // @@protoc_insertion_point(class_scope:vector_tile.Tile.Value)
@@ -199,9 +215,12 @@ class Tile_Value : public ::google::protobuf::MessageLite {
 
   ::google::protobuf::internal::ExtensionSet _extensions_;
 
-  ::std::string _unknown_fields_;
+  ::google::protobuf::internal::ArenaStringPtr _unknown_fields_;
   ::google::protobuf::Arena* _arena_ptr_;
 
+  friend class ::google::protobuf::Arena;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
   ::google::protobuf::uint32 _has_bits_[1];
   mutable int _cached_size_;
   ::google::protobuf::internal::ArenaStringPtr string_value_;
@@ -237,13 +256,20 @@ class Tile_Feature : public ::google::protobuf::MessageLite {
   }
 
   inline const ::std::string& unknown_fields() const {
-    return _unknown_fields_;
+    return _unknown_fields_.Get(
+        &::google::protobuf::internal::GetEmptyStringAlreadyInited());
   }
 
   inline ::std::string* mutable_unknown_fields() {
-    return &_unknown_fields_;
+    return _unknown_fields_.Mutable(
+        &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+        GetArenaNoVirtual());
   }
 
+  inline ::google::protobuf::Arena* GetArena() const { return GetArenaNoVirtual(); }
+  inline void* GetMaybeArenaPointer() const {
+    return MaybeArenaPtr();
+  }
   static const Tile_Feature& default_instance();
 
   #ifdef GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER
@@ -256,6 +282,7 @@ class Tile_Feature : public ::google::protobuf::MessageLite {
   }
   #endif
 
+  void UnsafeArenaSwap(Tile_Feature* other);
   void Swap(Tile_Feature* other);
 
   // implements Message ----------------------------------------------
@@ -281,6 +308,11 @@ class Tile_Feature : public ::google::protobuf::MessageLite {
   void SharedDtor();
   void SetCachedSize(int size) const;
   void InternalSwap(Tile_Feature* other);
+  protected:
+  explicit Tile_Feature(::google::protobuf::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::google::protobuf::Arena* arena);
   private:
   inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
     return _arena_ptr_;
@@ -297,54 +329,42 @@ class Tile_Feature : public ::google::protobuf::MessageLite {
   // accessors -------------------------------------------------------
 
   // optional uint64 id = 1 [default = 0];
-  inline bool has_id() const;
-  inline void clear_id();
+  bool has_id() const;
+  void clear_id();
   static const int kIdFieldNumber = 1;
-  inline ::google::protobuf::uint64 id() const;
-  inline void set_id(::google::protobuf::uint64 value);
+  ::google::protobuf::uint64 id() const;
+  void set_id(::google::protobuf::uint64 value);
 
   // repeated uint32 tags = 2 [packed = true];
-  inline int tags_size() const;
-  inline void clear_tags();
+  int tags_size() const;
+  void clear_tags();
   static const int kTagsFieldNumber = 2;
-  inline ::google::protobuf::uint32 tags(int index) const;
-  inline void set_tags(int index, ::google::protobuf::uint32 value);
-  inline void add_tags(::google::protobuf::uint32 value);
-  inline const ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >&
+  ::google::protobuf::uint32 tags(int index) const;
+  void set_tags(int index, ::google::protobuf::uint32 value);
+  void add_tags(::google::protobuf::uint32 value);
+  const ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >&
       tags() const;
-  inline ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >*
+  ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >*
       mutable_tags();
 
   // optional .vector_tile.Tile.GeomType type = 3 [default = UNKNOWN];
-  inline bool has_type() const;
-  inline void clear_type();
+  bool has_type() const;
+  void clear_type();
   static const int kTypeFieldNumber = 3;
-  inline ::vector_tile::Tile_GeomType type() const;
-  inline void set_type(::vector_tile::Tile_GeomType value);
+  ::vector_tile::Tile_GeomType type() const;
+  void set_type(::vector_tile::Tile_GeomType value);
 
   // repeated uint32 geometry = 4 [packed = true];
-  inline int geometry_size() const;
-  inline void clear_geometry();
+  int geometry_size() const;
+  void clear_geometry();
   static const int kGeometryFieldNumber = 4;
-  inline ::google::protobuf::uint32 geometry(int index) const;
-  inline void set_geometry(int index, ::google::protobuf::uint32 value);
-  inline void add_geometry(::google::protobuf::uint32 value);
-  inline const ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >&
+  ::google::protobuf::uint32 geometry(int index) const;
+  void set_geometry(int index, ::google::protobuf::uint32 value);
+  void add_geometry(::google::protobuf::uint32 value);
+  const ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >&
       geometry() const;
-  inline ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >*
+  ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >*
       mutable_geometry();
-
-  // optional bytes raster = 5;
-  inline bool has_raster() const;
-  inline void clear_raster();
-  static const int kRasterFieldNumber = 5;
-  inline const ::std::string& raster() const;
-  inline void set_raster(const ::std::string& value);
-  inline void set_raster(const char* value);
-  inline void set_raster(const void* value, size_t size);
-  inline ::std::string* mutable_raster();
-  inline ::std::string* release_raster();
-  inline void set_allocated_raster(::std::string* raster);
 
   // @@protoc_insertion_point(class_scope:vector_tile.Tile.Feature)
  private:
@@ -352,12 +372,13 @@ class Tile_Feature : public ::google::protobuf::MessageLite {
   inline void clear_has_id();
   inline void set_has_type();
   inline void clear_has_type();
-  inline void set_has_raster();
-  inline void clear_has_raster();
 
-  ::std::string _unknown_fields_;
+  ::google::protobuf::internal::ArenaStringPtr _unknown_fields_;
   ::google::protobuf::Arena* _arena_ptr_;
 
+  friend class ::google::protobuf::Arena;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
   ::google::protobuf::uint32 _has_bits_[1];
   mutable int _cached_size_;
   ::google::protobuf::uint64 id_;
@@ -365,7 +386,6 @@ class Tile_Feature : public ::google::protobuf::MessageLite {
   mutable int _tags_cached_byte_size_;
   ::google::protobuf::RepeatedField< ::google::protobuf::uint32 > geometry_;
   mutable int _geometry_cached_byte_size_;
-  ::google::protobuf::internal::ArenaStringPtr raster_;
   int type_;
   #ifdef GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER
   friend void  protobuf_AddDesc_vector_5ftile_2eproto_impl();
@@ -393,13 +413,20 @@ class Tile_Layer : public ::google::protobuf::MessageLite {
   }
 
   inline const ::std::string& unknown_fields() const {
-    return _unknown_fields_;
+    return _unknown_fields_.Get(
+        &::google::protobuf::internal::GetEmptyStringAlreadyInited());
   }
 
   inline ::std::string* mutable_unknown_fields() {
-    return &_unknown_fields_;
+    return _unknown_fields_.Mutable(
+        &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+        GetArenaNoVirtual());
   }
 
+  inline ::google::protobuf::Arena* GetArena() const { return GetArenaNoVirtual(); }
+  inline void* GetMaybeArenaPointer() const {
+    return MaybeArenaPtr();
+  }
   static const Tile_Layer& default_instance();
 
   #ifdef GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER
@@ -412,6 +439,7 @@ class Tile_Layer : public ::google::protobuf::MessageLite {
   }
   #endif
 
+  void UnsafeArenaSwap(Tile_Layer* other);
   void Swap(Tile_Layer* other);
 
   // implements Message ----------------------------------------------
@@ -437,6 +465,11 @@ class Tile_Layer : public ::google::protobuf::MessageLite {
   void SharedDtor();
   void SetCachedSize(int size) const;
   void InternalSwap(Tile_Layer* other);
+  protected:
+  explicit Tile_Layer(::google::protobuf::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::google::protobuf::Arena* arena);
   private:
   inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
     return _arena_ptr_;
@@ -453,70 +486,73 @@ class Tile_Layer : public ::google::protobuf::MessageLite {
   // accessors -------------------------------------------------------
 
   // required uint32 version = 15 [default = 1];
-  inline bool has_version() const;
-  inline void clear_version();
+  bool has_version() const;
+  void clear_version();
   static const int kVersionFieldNumber = 15;
-  inline ::google::protobuf::uint32 version() const;
-  inline void set_version(::google::protobuf::uint32 value);
+  ::google::protobuf::uint32 version() const;
+  void set_version(::google::protobuf::uint32 value);
 
   // required string name = 1;
-  inline bool has_name() const;
-  inline void clear_name();
+  bool has_name() const;
+  void clear_name();
   static const int kNameFieldNumber = 1;
-  inline const ::std::string& name() const;
-  inline void set_name(const ::std::string& value);
-  inline void set_name(const char* value);
-  inline void set_name(const char* value, size_t size);
-  inline ::std::string* mutable_name();
-  inline ::std::string* release_name();
-  inline void set_allocated_name(::std::string* name);
+  const ::std::string& name() const;
+  void set_name(const ::std::string& value);
+  void set_name(const char* value);
+  void set_name(const char* value, size_t size);
+  ::std::string* mutable_name();
+  ::std::string* release_name();
+  void set_allocated_name(::std::string* name);
+  ::std::string* unsafe_arena_release_name();
+  void unsafe_arena_set_allocated_name(
+      ::std::string* name);
 
   // repeated .vector_tile.Tile.Feature features = 2;
-  inline int features_size() const;
-  inline void clear_features();
+  int features_size() const;
+  void clear_features();
   static const int kFeaturesFieldNumber = 2;
-  inline const ::vector_tile::Tile_Feature& features(int index) const;
-  inline ::vector_tile::Tile_Feature* mutable_features(int index);
-  inline ::vector_tile::Tile_Feature* add_features();
-  inline const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Feature >&
-      features() const;
-  inline ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Feature >*
+  const ::vector_tile::Tile_Feature& features(int index) const;
+  ::vector_tile::Tile_Feature* mutable_features(int index);
+  ::vector_tile::Tile_Feature* add_features();
+  ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Feature >*
       mutable_features();
+  const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Feature >&
+      features() const;
 
   // repeated string keys = 3;
-  inline int keys_size() const;
-  inline void clear_keys();
+  int keys_size() const;
+  void clear_keys();
   static const int kKeysFieldNumber = 3;
-  inline const ::std::string& keys(int index) const;
-  inline ::std::string* mutable_keys(int index);
-  inline void set_keys(int index, const ::std::string& value);
-  inline void set_keys(int index, const char* value);
-  inline void set_keys(int index, const char* value, size_t size);
-  inline ::std::string* add_keys();
-  inline void add_keys(const ::std::string& value);
-  inline void add_keys(const char* value);
-  inline void add_keys(const char* value, size_t size);
-  inline const ::google::protobuf::RepeatedPtrField< ::std::string>& keys() const;
-  inline ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_keys();
+  const ::std::string& keys(int index) const;
+  ::std::string* mutable_keys(int index);
+  void set_keys(int index, const ::std::string& value);
+  void set_keys(int index, const char* value);
+  void set_keys(int index, const char* value, size_t size);
+  ::std::string* add_keys();
+  void add_keys(const ::std::string& value);
+  void add_keys(const char* value);
+  void add_keys(const char* value, size_t size);
+  const ::google::protobuf::RepeatedPtrField< ::std::string>& keys() const;
+  ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_keys();
 
   // repeated .vector_tile.Tile.Value values = 4;
-  inline int values_size() const;
-  inline void clear_values();
+  int values_size() const;
+  void clear_values();
   static const int kValuesFieldNumber = 4;
-  inline const ::vector_tile::Tile_Value& values(int index) const;
-  inline ::vector_tile::Tile_Value* mutable_values(int index);
-  inline ::vector_tile::Tile_Value* add_values();
-  inline const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Value >&
-      values() const;
-  inline ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Value >*
+  const ::vector_tile::Tile_Value& values(int index) const;
+  ::vector_tile::Tile_Value* mutable_values(int index);
+  ::vector_tile::Tile_Value* add_values();
+  ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Value >*
       mutable_values();
+  const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Value >&
+      values() const;
 
   // optional uint32 extent = 5 [default = 4096];
-  inline bool has_extent() const;
-  inline void clear_extent();
+  bool has_extent() const;
+  void clear_extent();
   static const int kExtentFieldNumber = 5;
-  inline ::google::protobuf::uint32 extent() const;
-  inline void set_extent(::google::protobuf::uint32 value);
+  ::google::protobuf::uint32 extent() const;
+  void set_extent(::google::protobuf::uint32 value);
 
   GOOGLE_PROTOBUF_EXTENSION_ACCESSORS(Tile_Layer)
   // @@protoc_insertion_point(class_scope:vector_tile.Tile.Layer)
@@ -533,9 +569,12 @@ class Tile_Layer : public ::google::protobuf::MessageLite {
 
   ::google::protobuf::internal::ExtensionSet _extensions_;
 
-  ::std::string _unknown_fields_;
+  ::google::protobuf::internal::ArenaStringPtr _unknown_fields_;
   ::google::protobuf::Arena* _arena_ptr_;
 
+  friend class ::google::protobuf::Arena;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
   ::google::protobuf::uint32 _has_bits_[1];
   mutable int _cached_size_;
   ::google::protobuf::internal::ArenaStringPtr name_;
@@ -570,13 +609,20 @@ class Tile : public ::google::protobuf::MessageLite {
   }
 
   inline const ::std::string& unknown_fields() const {
-    return _unknown_fields_;
+    return _unknown_fields_.Get(
+        &::google::protobuf::internal::GetEmptyStringAlreadyInited());
   }
 
   inline ::std::string* mutable_unknown_fields() {
-    return &_unknown_fields_;
+    return _unknown_fields_.Mutable(
+        &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+        GetArenaNoVirtual());
   }
 
+  inline ::google::protobuf::Arena* GetArena() const { return GetArenaNoVirtual(); }
+  inline void* GetMaybeArenaPointer() const {
+    return MaybeArenaPtr();
+  }
   static const Tile& default_instance();
 
   #ifdef GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER
@@ -589,6 +635,7 @@ class Tile : public ::google::protobuf::MessageLite {
   }
   #endif
 
+  void UnsafeArenaSwap(Tile* other);
   void Swap(Tile* other);
 
   // implements Message ----------------------------------------------
@@ -614,6 +661,11 @@ class Tile : public ::google::protobuf::MessageLite {
   void SharedDtor();
   void SetCachedSize(int size) const;
   void InternalSwap(Tile* other);
+  protected:
+  explicit Tile(::google::protobuf::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::google::protobuf::Arena* arena);
   private:
   inline ::google::protobuf::Arena* GetArenaNoVirtual() const {
     return _arena_ptr_;
@@ -632,10 +684,14 @@ class Tile : public ::google::protobuf::MessageLite {
   typedef Tile_Layer Layer;
 
   typedef Tile_GeomType GeomType;
-  static const GeomType UNKNOWN = Tile_GeomType_UNKNOWN;
-  static const GeomType POINT = Tile_GeomType_POINT;
-  static const GeomType LINESTRING = Tile_GeomType_LINESTRING;
-  static const GeomType POLYGON = Tile_GeomType_POLYGON;
+  static const GeomType UNKNOWN =
+    Tile_GeomType_UNKNOWN;
+  static const GeomType POINT =
+    Tile_GeomType_POINT;
+  static const GeomType LINESTRING =
+    Tile_GeomType_LINESTRING;
+  static const GeomType POLYGON =
+    Tile_GeomType_POLYGON;
   static inline bool GeomType_IsValid(int value) {
     return Tile_GeomType_IsValid(value);
   }
@@ -649,16 +705,16 @@ class Tile : public ::google::protobuf::MessageLite {
   // accessors -------------------------------------------------------
 
   // repeated .vector_tile.Tile.Layer layers = 3;
-  inline int layers_size() const;
-  inline void clear_layers();
+  int layers_size() const;
+  void clear_layers();
   static const int kLayersFieldNumber = 3;
-  inline const ::vector_tile::Tile_Layer& layers(int index) const;
-  inline ::vector_tile::Tile_Layer* mutable_layers(int index);
-  inline ::vector_tile::Tile_Layer* add_layers();
-  inline const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Layer >&
-      layers() const;
-  inline ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Layer >*
+  const ::vector_tile::Tile_Layer& layers(int index) const;
+  ::vector_tile::Tile_Layer* mutable_layers(int index);
+  ::vector_tile::Tile_Layer* add_layers();
+  ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Layer >*
       mutable_layers();
+  const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Layer >&
+      layers() const;
 
   GOOGLE_PROTOBUF_EXTENSION_ACCESSORS(Tile)
   // @@protoc_insertion_point(class_scope:vector_tile.Tile)
@@ -666,9 +722,12 @@ class Tile : public ::google::protobuf::MessageLite {
 
   ::google::protobuf::internal::ExtensionSet _extensions_;
 
-  ::std::string _unknown_fields_;
+  ::google::protobuf::internal::ArenaStringPtr _unknown_fields_;
   ::google::protobuf::Arena* _arena_ptr_;
 
+  friend class ::google::protobuf::Arena;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
   ::google::protobuf::uint32 _has_bits_[1];
   mutable int _cached_size_;
   ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Layer > layers_;
@@ -688,6 +747,7 @@ class Tile : public ::google::protobuf::MessageLite {
 
 // ===================================================================
 
+#if !PROTOBUF_INLINE_NOT_IN_HEADERS
 // Tile_Value
 
 // optional string string_value = 1;
@@ -701,37 +761,47 @@ inline void Tile_Value::clear_has_string_value() {
   _has_bits_[0] &= ~0x00000001u;
 }
 inline void Tile_Value::clear_string_value() {
-  string_value_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  string_value_.ClearToEmpty(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
   clear_has_string_value();
 }
 inline const ::std::string& Tile_Value::string_value() const {
   // @@protoc_insertion_point(field_get:vector_tile.Tile.Value.string_value)
-  return string_value_.GetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  return string_value_.Get(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void Tile_Value::set_string_value(const ::std::string& value) {
   set_has_string_value();
-  string_value_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  string_value_.Set(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value, GetArenaNoVirtual());
   // @@protoc_insertion_point(field_set:vector_tile.Tile.Value.string_value)
 }
 inline void Tile_Value::set_string_value(const char* value) {
   set_has_string_value();
-  string_value_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  string_value_.Set(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArenaNoVirtual());
   // @@protoc_insertion_point(field_set_char:vector_tile.Tile.Value.string_value)
 }
-inline void Tile_Value::set_string_value(const char* value, size_t size) {
+inline void Tile_Value::set_string_value(const char* value,
+    size_t size) {
   set_has_string_value();
-  string_value_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
-      ::std::string(reinterpret_cast<const char*>(value), size));
+  string_value_.Set(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArenaNoVirtual());
   // @@protoc_insertion_point(field_set_pointer:vector_tile.Tile.Value.string_value)
 }
 inline ::std::string* Tile_Value::mutable_string_value() {
   set_has_string_value();
   // @@protoc_insertion_point(field_mutable:vector_tile.Tile.Value.string_value)
-  return string_value_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  return string_value_.Mutable(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
 }
 inline ::std::string* Tile_Value::release_string_value() {
+  // @@protoc_insertion_point(field_release:vector_tile.Tile.Value.string_value)
   clear_has_string_value();
-  return string_value_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  return string_value_.Release(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
+}
+inline ::std::string* Tile_Value::unsafe_arena_release_string_value() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:vector_tile.Tile.Value.string_value)
+  GOOGLE_DCHECK(GetArenaNoVirtual() != NULL);
+  clear_has_string_value();
+  return string_value_.UnsafeArenaRelease(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      GetArenaNoVirtual());
 }
 inline void Tile_Value::set_allocated_string_value(::std::string* string_value) {
   if (string_value != NULL) {
@@ -739,8 +809,21 @@ inline void Tile_Value::set_allocated_string_value(::std::string* string_value) 
   } else {
     clear_has_string_value();
   }
-  string_value_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), string_value);
+  string_value_.SetAllocated(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), string_value,
+      GetArenaNoVirtual());
   // @@protoc_insertion_point(field_set_allocated:vector_tile.Tile.Value.string_value)
+}
+inline void Tile_Value::unsafe_arena_set_allocated_string_value(
+    ::std::string* string_value) {
+  GOOGLE_DCHECK(GetArenaNoVirtual() != NULL);
+  if (string_value != NULL) {
+    set_has_string_value();
+  } else {
+    clear_has_string_value();
+  }
+  string_value_.UnsafeArenaSetAllocated(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      string_value, GetArenaNoVirtual());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:vector_tile.Tile.Value.string_value)
 }
 
 // optional float float_value = 2;
@@ -1000,59 +1083,6 @@ Tile_Feature::mutable_geometry() {
   return &geometry_;
 }
 
-// optional bytes raster = 5;
-inline bool Tile_Feature::has_raster() const {
-  return (_has_bits_[0] & 0x00000010u) != 0;
-}
-inline void Tile_Feature::set_has_raster() {
-  _has_bits_[0] |= 0x00000010u;
-}
-inline void Tile_Feature::clear_has_raster() {
-  _has_bits_[0] &= ~0x00000010u;
-}
-inline void Tile_Feature::clear_raster() {
-  raster_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  clear_has_raster();
-}
-inline const ::std::string& Tile_Feature::raster() const {
-  // @@protoc_insertion_point(field_get:vector_tile.Tile.Feature.raster)
-  return raster_.GetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-}
-inline void Tile_Feature::set_raster(const ::std::string& value) {
-  set_has_raster();
-  raster_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
-  // @@protoc_insertion_point(field_set:vector_tile.Tile.Feature.raster)
-}
-inline void Tile_Feature::set_raster(const char* value) {
-  set_has_raster();
-  raster_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
-  // @@protoc_insertion_point(field_set_char:vector_tile.Tile.Feature.raster)
-}
-inline void Tile_Feature::set_raster(const void* value, size_t size) {
-  set_has_raster();
-  raster_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
-      ::std::string(reinterpret_cast<const char*>(value), size));
-  // @@protoc_insertion_point(field_set_pointer:vector_tile.Tile.Feature.raster)
-}
-inline ::std::string* Tile_Feature::mutable_raster() {
-  set_has_raster();
-  // @@protoc_insertion_point(field_mutable:vector_tile.Tile.Feature.raster)
-  return raster_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-}
-inline ::std::string* Tile_Feature::release_raster() {
-  clear_has_raster();
-  return raster_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-}
-inline void Tile_Feature::set_allocated_raster(::std::string* raster) {
-  if (raster != NULL) {
-    set_has_raster();
-  } else {
-    clear_has_raster();
-  }
-  raster_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), raster);
-  // @@protoc_insertion_point(field_set_allocated:vector_tile.Tile.Feature.raster)
-}
-
 // -------------------------------------------------------------------
 
 // Tile_Layer
@@ -1092,37 +1122,47 @@ inline void Tile_Layer::clear_has_name() {
   _has_bits_[0] &= ~0x00000002u;
 }
 inline void Tile_Layer::clear_name() {
-  name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  name_.ClearToEmpty(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
   clear_has_name();
 }
 inline const ::std::string& Tile_Layer::name() const {
   // @@protoc_insertion_point(field_get:vector_tile.Tile.Layer.name)
-  return name_.GetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  return name_.Get(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 inline void Tile_Layer::set_name(const ::std::string& value) {
   set_has_name();
-  name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  name_.Set(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value, GetArenaNoVirtual());
   // @@protoc_insertion_point(field_set:vector_tile.Tile.Layer.name)
 }
 inline void Tile_Layer::set_name(const char* value) {
   set_has_name();
-  name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  name_.Set(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArenaNoVirtual());
   // @@protoc_insertion_point(field_set_char:vector_tile.Tile.Layer.name)
 }
-inline void Tile_Layer::set_name(const char* value, size_t size) {
+inline void Tile_Layer::set_name(const char* value,
+    size_t size) {
   set_has_name();
-  name_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
-      ::std::string(reinterpret_cast<const char*>(value), size));
+  name_.Set(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArenaNoVirtual());
   // @@protoc_insertion_point(field_set_pointer:vector_tile.Tile.Layer.name)
 }
 inline ::std::string* Tile_Layer::mutable_name() {
   set_has_name();
   // @@protoc_insertion_point(field_mutable:vector_tile.Tile.Layer.name)
-  return name_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  return name_.Mutable(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
 }
 inline ::std::string* Tile_Layer::release_name() {
+  // @@protoc_insertion_point(field_release:vector_tile.Tile.Layer.name)
   clear_has_name();
-  return name_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  return name_.Release(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
+}
+inline ::std::string* Tile_Layer::unsafe_arena_release_name() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:vector_tile.Tile.Layer.name)
+  GOOGLE_DCHECK(GetArenaNoVirtual() != NULL);
+  clear_has_name();
+  return name_.UnsafeArenaRelease(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      GetArenaNoVirtual());
 }
 inline void Tile_Layer::set_allocated_name(::std::string* name) {
   if (name != NULL) {
@@ -1130,8 +1170,21 @@ inline void Tile_Layer::set_allocated_name(::std::string* name) {
   } else {
     clear_has_name();
   }
-  name_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), name);
+  name_.SetAllocated(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), name,
+      GetArenaNoVirtual());
   // @@protoc_insertion_point(field_set_allocated:vector_tile.Tile.Layer.name)
+}
+inline void Tile_Layer::unsafe_arena_set_allocated_name(
+    ::std::string* name) {
+  GOOGLE_DCHECK(GetArenaNoVirtual() != NULL);
+  if (name != NULL) {
+    set_has_name();
+  } else {
+    clear_has_name();
+  }
+  name_.UnsafeArenaSetAllocated(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      name, GetArenaNoVirtual());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:vector_tile.Tile.Layer.name)
 }
 
 // repeated .vector_tile.Tile.Feature features = 2;
@@ -1153,15 +1206,15 @@ inline ::vector_tile::Tile_Feature* Tile_Layer::add_features() {
   // @@protoc_insertion_point(field_add:vector_tile.Tile.Layer.features)
   return features_.Add();
 }
-inline const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Feature >&
-Tile_Layer::features() const {
-  // @@protoc_insertion_point(field_list:vector_tile.Tile.Layer.features)
-  return features_;
-}
 inline ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Feature >*
 Tile_Layer::mutable_features() {
   // @@protoc_insertion_point(field_mutable_list:vector_tile.Tile.Layer.features)
   return &features_;
+}
+inline const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Feature >&
+Tile_Layer::features() const {
+  // @@protoc_insertion_point(field_list:vector_tile.Tile.Layer.features)
+  return features_;
 }
 
 // repeated string keys = 3;
@@ -1193,6 +1246,7 @@ inline void Tile_Layer::set_keys(int index, const char* value, size_t size) {
   // @@protoc_insertion_point(field_set_pointer:vector_tile.Tile.Layer.keys)
 }
 inline ::std::string* Tile_Layer::add_keys() {
+  // @@protoc_insertion_point(field_add_mutable:vector_tile.Tile.Layer.keys)
   return keys_.Add();
 }
 inline void Tile_Layer::add_keys(const ::std::string& value) {
@@ -1237,15 +1291,15 @@ inline ::vector_tile::Tile_Value* Tile_Layer::add_values() {
   // @@protoc_insertion_point(field_add:vector_tile.Tile.Layer.values)
   return values_.Add();
 }
-inline const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Value >&
-Tile_Layer::values() const {
-  // @@protoc_insertion_point(field_list:vector_tile.Tile.Layer.values)
-  return values_;
-}
 inline ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Value >*
 Tile_Layer::mutable_values() {
   // @@protoc_insertion_point(field_mutable_list:vector_tile.Tile.Layer.values)
   return &values_;
+}
+inline const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Value >&
+Tile_Layer::values() const {
+  // @@protoc_insertion_point(field_list:vector_tile.Tile.Layer.values)
+  return values_;
 }
 
 // optional uint32 extent = 5 [default = 4096];
@@ -1295,21 +1349,38 @@ inline ::vector_tile::Tile_Layer* Tile::add_layers() {
   // @@protoc_insertion_point(field_add:vector_tile.Tile.layers)
   return layers_.Add();
 }
-inline const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Layer >&
-Tile::layers() const {
-  // @@protoc_insertion_point(field_list:vector_tile.Tile.layers)
-  return layers_;
-}
 inline ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Layer >*
 Tile::mutable_layers() {
   // @@protoc_insertion_point(field_mutable_list:vector_tile.Tile.layers)
   return &layers_;
 }
+inline const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Layer >&
+Tile::layers() const {
+  // @@protoc_insertion_point(field_list:vector_tile.Tile.layers)
+  return layers_;
+}
+
+#endif  // !PROTOBUF_INLINE_NOT_IN_HEADERS
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
 
 
 // @@protoc_insertion_point(namespace_scope)
 
 }  // namespace vector_tile
+
+#ifndef SWIG
+namespace google {
+namespace protobuf {
+
+template <> struct is_proto_enum< ::vector_tile::Tile_GeomType> : ::google::protobuf::internal::true_type {};
+
+}  // namespace protobuf
+}  // namespace google
+#endif  // SWIG
 
 // @@protoc_insertion_point(global_scope)
 

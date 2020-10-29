@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include <google/protobuf/stubs/common.h>
+#include <google/protobuf/stubs/port.h>
 #include <google/protobuf/stubs/once.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/wire_format_lite_inl.h>
@@ -72,6 +73,11 @@ static void MergeFromFail(int line) {
 
 // ===================================================================
 
+static ::std::string* MutableUnknownFieldsForTile(
+    Tile* ptr) {
+  return ptr->mutable_unknown_fields();
+}
+
 bool Tile_GeomType_IsValid(int value) {
   switch(value) {
     case 0:
@@ -84,7 +90,7 @@ bool Tile_GeomType_IsValid(int value) {
   }
 }
 
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
 const Tile_GeomType Tile::UNKNOWN;
 const Tile_GeomType Tile::POINT;
 const Tile_GeomType Tile::LINESTRING;
@@ -92,8 +98,13 @@ const Tile_GeomType Tile::POLYGON;
 const Tile_GeomType Tile::GeomType_MIN;
 const Tile_GeomType Tile::GeomType_MAX;
 const int Tile::GeomType_ARRAYSIZE;
-#endif  // _MSC_VER
-#ifndef _MSC_VER
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
+static ::std::string* MutableUnknownFieldsForTile_Value(
+    Tile_Value* ptr) {
+  return ptr->mutable_unknown_fields();
+}
+
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int Tile_Value::kStringValueFieldNumber;
 const int Tile_Value::kFloatValueFieldNumber;
 const int Tile_Value::kDoubleValueFieldNumber;
@@ -101,12 +112,21 @@ const int Tile_Value::kIntValueFieldNumber;
 const int Tile_Value::kUintValueFieldNumber;
 const int Tile_Value::kSintValueFieldNumber;
 const int Tile_Value::kBoolValueFieldNumber;
-#endif  // !_MSC_VER
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 Tile_Value::Tile_Value()
-  : ::google::protobuf::MessageLite() , _arena_ptr_(NULL) {
+  : ::google::protobuf::MessageLite(), _arena_ptr_(NULL) {
   SharedCtor();
   // @@protoc_insertion_point(constructor:vector_tile.Tile.Value)
+}
+
+Tile_Value::Tile_Value(::google::protobuf::Arena* arena)
+  : ::google::protobuf::MessageLite(),
+  _extensions_(arena),
+  _arena_ptr_(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:vector_tile.Tile.Value)
 }
 
 void Tile_Value::InitAsDefaultInstance() {
@@ -123,6 +143,8 @@ Tile_Value::Tile_Value(const Tile_Value& from)
 void Tile_Value::SharedCtor() {
   ::google::protobuf::internal::GetEmptyString();
   _cached_size_ = 0;
+  _unknown_fields_.UnsafeSetDefault(
+      &::google::protobuf::internal::GetEmptyStringAlreadyInited());
   string_value_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   float_value_ = 0;
   double_value_ = 0;
@@ -139,7 +161,14 @@ Tile_Value::~Tile_Value() {
 }
 
 void Tile_Value::SharedDtor() {
-  string_value_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (GetArenaNoVirtual() != NULL) {
+    return;
+  }
+
+  _unknown_fields_.Destroy(
+      &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      GetArenaNoVirtual());
+  string_value_.Destroy(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
   #ifdef GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER
   if (this != &default_instance()) {
   #else
@@ -148,6 +177,12 @@ void Tile_Value::SharedDtor() {
   }
 }
 
+void Tile_Value::ArenaDtor(void* object) {
+  Tile_Value* _this = reinterpret_cast< Tile_Value* >(object);
+  (void)_this;
+}
+void Tile_Value::RegisterArenaDtor(::google::protobuf::Arena* arena) {
+}
 void Tile_Value::SetCachedSize(int size) const {
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
   _cached_size_ = size;
@@ -165,47 +200,53 @@ const Tile_Value& Tile_Value::default_instance() {
 Tile_Value* Tile_Value::default_instance_ = NULL;
 
 Tile_Value* Tile_Value::New(::google::protobuf::Arena* arena) const {
-  Tile_Value* n = new Tile_Value;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
+  return ::google::protobuf::Arena::CreateMessage<Tile_Value>(arena);
 }
 
 void Tile_Value::Clear() {
+// @@protoc_insertion_point(message_clear_start:vector_tile.Tile.Value)
   _extensions_.Clear();
-#define OFFSET_OF_FIELD_(f) (reinterpret_cast<char*>(      \
-  &reinterpret_cast<Tile_Value*>(16)->f) - \
-   reinterpret_cast<char*>(16))
+#if defined(__clang__)
+#define ZR_HELPER_(f) \
+  _Pragma("clang diagnostic push") \
+  _Pragma("clang diagnostic ignored \"-Winvalid-offsetof\"") \
+  __builtin_offsetof(Tile_Value, f) \
+  _Pragma("clang diagnostic pop")
+#else
+#define ZR_HELPER_(f) reinterpret_cast<char*>(\
+  &reinterpret_cast<Tile_Value*>(16)->f)
+#endif
 
-#define ZR_(first, last) do {                              \
-    size_t f = OFFSET_OF_FIELD_(first);                    \
-    size_t n = OFFSET_OF_FIELD_(last) - f + sizeof(last);  \
-    ::memset(&first, 0, n);                                \
-  } while (0)
+#define ZR_(first, last) do {\
+  ::memset(&first, 0,\
+           ZR_HELPER_(last) - ZR_HELPER_(first) + sizeof(last));\
+} while (0)
 
-  if (_has_bits_[0 / 32] & 127) {
+  if (_has_bits_[0 / 32] & 127u) {
     ZR_(double_value_, sint_value_);
     if (has_string_value()) {
-      string_value_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+      string_value_.ClearToEmpty(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
     }
   }
 
-#undef OFFSET_OF_FIELD_
+#undef ZR_HELPER_
 #undef ZR_
 
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
-  mutable_unknown_fields()->clear();
+  _unknown_fields_.ClearToEmpty(
+      &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      GetArenaNoVirtual());
 }
 
 bool Tile_Value::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  ::google::protobuf::io::StringOutputStream unknown_fields_string(
-      mutable_unknown_fields());
+  ::google::protobuf::io::LazyStringOutputStream unknown_fields_string(
+      ::google::protobuf::internal::NewPermanentCallback(
+          &MutableUnknownFieldsForTile_Value, this));
   ::google::protobuf::io::CodedOutputStream unknown_fields_stream(
-      &unknown_fields_string);
+      &unknown_fields_string, false);
   // @@protoc_insertion_point(parse_start:vector_tile.Tile.Value)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
@@ -390,14 +431,15 @@ void Tile_Value::SerializeWithCachedSizes(
       8, 536870912, output);
 
   output->WriteRaw(unknown_fields().data(),
-                   (int) unknown_fields().size());
+                   static_cast<int>(unknown_fields().size()));
   // @@protoc_insertion_point(serialize_end:vector_tile.Tile.Value)
 }
 
 int Tile_Value::ByteSize() const {
+// @@protoc_insertion_point(message_byte_size_start:vector_tile.Tile.Value)
   int total_size = 0;
 
-  if (_has_bits_[0 / 32] & 127) {
+  if (_has_bits_[0 / 32] & 127u) {
     // optional string string_value = 1;
     if (has_string_value()) {
       total_size += 1 +
@@ -458,11 +500,11 @@ void Tile_Value::CheckTypeAndMergeFrom(
 }
 
 void Tile_Value::MergeFrom(const Tile_Value& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:vector_tile.Tile.Value)
   if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from.has_string_value()) {
-      set_has_string_value();
-      string_value_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.string_value_);
+      set_string_value(from.string_value());
     }
     if (from.has_float_value()) {
       set_float_value(from.float_value());
@@ -484,10 +526,13 @@ void Tile_Value::MergeFrom(const Tile_Value& from) {
     }
   }
   _extensions_.MergeFrom(from._extensions_);
-  mutable_unknown_fields()->append(from.unknown_fields());
+  if (!from.unknown_fields().empty()) {
+    mutable_unknown_fields()->append(from.unknown_fields());
+  }
 }
 
 void Tile_Value::CopyFrom(const Tile_Value& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:vector_tile.Tile.Value)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -501,6 +546,18 @@ bool Tile_Value::IsInitialized() const {
 
 void Tile_Value::Swap(Tile_Value* other) {
   if (other == this) return;
+  if (GetArenaNoVirtual() == other->GetArenaNoVirtual()) {
+    InternalSwap(other);
+  } else {
+    Tile_Value temp;
+    temp.MergeFrom(*this);
+    CopyFrom(*other);
+    other->CopyFrom(temp);
+  }
+}
+void Tile_Value::UnsafeArenaSwap(Tile_Value* other) {
+  if (other == this) return;
+  GOOGLE_DCHECK(GetArenaNoVirtual() == other->GetArenaNoVirtual());
   InternalSwap(other);
 }
 void Tile_Value::InternalSwap(Tile_Value* other) {
@@ -512,7 +569,7 @@ void Tile_Value::InternalSwap(Tile_Value* other) {
   std::swap(sint_value_, other->sint_value_);
   std::swap(bool_value_, other->bool_value_);
   std::swap(_has_bits_[0], other->_has_bits_[0]);
-  _unknown_fields_.swap(other->_unknown_fields_);
+  _unknown_fields_.Swap(&other->_unknown_fields_);
   std::swap(_cached_size_, other->_cached_size_);
   _extensions_.Swap(&other->_extensions_);
 }
@@ -524,18 +581,32 @@ void Tile_Value::InternalSwap(Tile_Value* other) {
 
 // -------------------------------------------------------------------
 
-#ifndef _MSC_VER
+static ::std::string* MutableUnknownFieldsForTile_Feature(
+    Tile_Feature* ptr) {
+  return ptr->mutable_unknown_fields();
+}
+
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int Tile_Feature::kIdFieldNumber;
 const int Tile_Feature::kTagsFieldNumber;
 const int Tile_Feature::kTypeFieldNumber;
 const int Tile_Feature::kGeometryFieldNumber;
-const int Tile_Feature::kRasterFieldNumber;
-#endif  // !_MSC_VER
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 Tile_Feature::Tile_Feature()
-  : ::google::protobuf::MessageLite() , _arena_ptr_(NULL) {
+  : ::google::protobuf::MessageLite(), _arena_ptr_(NULL) {
   SharedCtor();
   // @@protoc_insertion_point(constructor:vector_tile.Tile.Feature)
+}
+
+Tile_Feature::Tile_Feature(::google::protobuf::Arena* arena)
+  : ::google::protobuf::MessageLite(),
+  _arena_ptr_(arena),
+  tags_(arena),
+  geometry_(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:vector_tile.Tile.Feature)
 }
 
 void Tile_Feature::InitAsDefaultInstance() {
@@ -552,9 +623,10 @@ Tile_Feature::Tile_Feature(const Tile_Feature& from)
 void Tile_Feature::SharedCtor() {
   ::google::protobuf::internal::GetEmptyString();
   _cached_size_ = 0;
+  _unknown_fields_.UnsafeSetDefault(
+      &::google::protobuf::internal::GetEmptyStringAlreadyInited());
   id_ = GOOGLE_ULONGLONG(0);
   type_ = 0;
-  raster_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -564,7 +636,13 @@ Tile_Feature::~Tile_Feature() {
 }
 
 void Tile_Feature::SharedDtor() {
-  raster_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (GetArenaNoVirtual() != NULL) {
+    return;
+  }
+
+  _unknown_fields_.Destroy(
+      &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      GetArenaNoVirtual());
   #ifdef GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER
   if (this != &default_instance()) {
   #else
@@ -573,6 +651,12 @@ void Tile_Feature::SharedDtor() {
   }
 }
 
+void Tile_Feature::ArenaDtor(void* object) {
+  Tile_Feature* _this = reinterpret_cast< Tile_Feature* >(object);
+  (void)_this;
+}
+void Tile_Feature::RegisterArenaDtor(::google::protobuf::Arena* arena) {
+}
 void Tile_Feature::SetCachedSize(int size) const {
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
   _cached_size_ = size;
@@ -590,35 +674,32 @@ const Tile_Feature& Tile_Feature::default_instance() {
 Tile_Feature* Tile_Feature::default_instance_ = NULL;
 
 Tile_Feature* Tile_Feature::New(::google::protobuf::Arena* arena) const {
-  Tile_Feature* n = new Tile_Feature;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
+  return ::google::protobuf::Arena::CreateMessage<Tile_Feature>(arena);
 }
 
 void Tile_Feature::Clear() {
-  if (_has_bits_[0 / 32] & 21) {
+// @@protoc_insertion_point(message_clear_start:vector_tile.Tile.Feature)
+  if (_has_bits_[0 / 32] & 5u) {
     id_ = GOOGLE_ULONGLONG(0);
     type_ = 0;
-    if (has_raster()) {
-      raster_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-    }
   }
   tags_.Clear();
   geometry_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
-  mutable_unknown_fields()->clear();
+  _unknown_fields_.ClearToEmpty(
+      &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      GetArenaNoVirtual());
 }
 
 bool Tile_Feature::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  ::google::protobuf::io::StringOutputStream unknown_fields_string(
-      mutable_unknown_fields());
+  ::google::protobuf::io::LazyStringOutputStream unknown_fields_string(
+      ::google::protobuf::internal::NewPermanentCallback(
+          &MutableUnknownFieldsForTile_Feature, this));
   ::google::protobuf::io::CodedOutputStream unknown_fields_stream(
-      &unknown_fields_string);
+      &unknown_fields_string, false);
   // @@protoc_insertion_point(parse_start:vector_tile.Tile.Feature)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
@@ -668,7 +749,7 @@ bool Tile_Feature::MergePartialFromCodedStream(
           if (::vector_tile::Tile_GeomType_IsValid(value)) {
             set_type(static_cast< ::vector_tile::Tile_GeomType >(value));
           } else {
-            unknown_fields_stream.WriteVarint32(tag);
+            unknown_fields_stream.WriteVarint32(24);
             unknown_fields_stream.WriteVarint32(value);
           }
         } else {
@@ -689,19 +770,6 @@ bool Tile_Feature::MergePartialFromCodedStream(
           DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitiveNoInline<
                    ::google::protobuf::uint32, ::google::protobuf::internal::WireFormatLite::TYPE_UINT32>(
                  1, 34, input, this->mutable_geometry())));
-        } else {
-          goto handle_unusual;
-        }
-        if (input->ExpectTag(42)) goto parse_raster;
-        break;
-      }
-
-      // optional bytes raster = 5;
-      case 5: {
-        if (tag == 42) {
-         parse_raster:
-          DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
-                input, this->mutable_raster()));
         } else {
           goto handle_unusual;
         }
@@ -765,21 +833,16 @@ void Tile_Feature::SerializeWithCachedSizes(
       this->geometry(i), output);
   }
 
-  // optional bytes raster = 5;
-  if (has_raster()) {
-    ::google::protobuf::internal::WireFormatLite::WriteBytesMaybeAliased(
-      5, this->raster(), output);
-  }
-
   output->WriteRaw(unknown_fields().data(),
-                   (int) unknown_fields().size());
+                   static_cast<int>(unknown_fields().size()));
   // @@protoc_insertion_point(serialize_end:vector_tile.Tile.Feature)
 }
 
 int Tile_Feature::ByteSize() const {
+// @@protoc_insertion_point(message_byte_size_start:vector_tile.Tile.Feature)
   int total_size = 0;
 
-  if (_has_bits_[0 / 32] & 21) {
+  if (_has_bits_[0 / 32] & 5u) {
     // optional uint64 id = 1 [default = 0];
     if (has_id()) {
       total_size += 1 +
@@ -791,13 +854,6 @@ int Tile_Feature::ByteSize() const {
     if (has_type()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::EnumSize(this->type());
-    }
-
-    // optional bytes raster = 5;
-    if (has_raster()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::BytesSize(
-          this->raster());
     }
 
   }
@@ -849,6 +905,7 @@ void Tile_Feature::CheckTypeAndMergeFrom(
 }
 
 void Tile_Feature::MergeFrom(const Tile_Feature& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:vector_tile.Tile.Feature)
   if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
   tags_.MergeFrom(from.tags_);
   geometry_.MergeFrom(from.geometry_);
@@ -859,15 +916,14 @@ void Tile_Feature::MergeFrom(const Tile_Feature& from) {
     if (from.has_type()) {
       set_type(from.type());
     }
-    if (from.has_raster()) {
-      set_has_raster();
-      raster_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.raster_);
-    }
   }
-  mutable_unknown_fields()->append(from.unknown_fields());
+  if (!from.unknown_fields().empty()) {
+    mutable_unknown_fields()->append(from.unknown_fields());
+  }
 }
 
 void Tile_Feature::CopyFrom(const Tile_Feature& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:vector_tile.Tile.Feature)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -880,6 +936,18 @@ bool Tile_Feature::IsInitialized() const {
 
 void Tile_Feature::Swap(Tile_Feature* other) {
   if (other == this) return;
+  if (GetArenaNoVirtual() == other->GetArenaNoVirtual()) {
+    InternalSwap(other);
+  } else {
+    Tile_Feature temp;
+    temp.MergeFrom(*this);
+    CopyFrom(*other);
+    other->CopyFrom(temp);
+  }
+}
+void Tile_Feature::UnsafeArenaSwap(Tile_Feature* other) {
+  if (other == this) return;
+  GOOGLE_DCHECK(GetArenaNoVirtual() == other->GetArenaNoVirtual());
   InternalSwap(other);
 }
 void Tile_Feature::InternalSwap(Tile_Feature* other) {
@@ -887,9 +955,8 @@ void Tile_Feature::InternalSwap(Tile_Feature* other) {
   tags_.UnsafeArenaSwap(&other->tags_);
   std::swap(type_, other->type_);
   geometry_.UnsafeArenaSwap(&other->geometry_);
-  raster_.Swap(&other->raster_);
   std::swap(_has_bits_[0], other->_has_bits_[0]);
-  _unknown_fields_.swap(other->_unknown_fields_);
+  _unknown_fields_.Swap(&other->_unknown_fields_);
   std::swap(_cached_size_, other->_cached_size_);
 }
 
@@ -900,19 +967,36 @@ void Tile_Feature::InternalSwap(Tile_Feature* other) {
 
 // -------------------------------------------------------------------
 
-#ifndef _MSC_VER
+static ::std::string* MutableUnknownFieldsForTile_Layer(
+    Tile_Layer* ptr) {
+  return ptr->mutable_unknown_fields();
+}
+
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int Tile_Layer::kVersionFieldNumber;
 const int Tile_Layer::kNameFieldNumber;
 const int Tile_Layer::kFeaturesFieldNumber;
 const int Tile_Layer::kKeysFieldNumber;
 const int Tile_Layer::kValuesFieldNumber;
 const int Tile_Layer::kExtentFieldNumber;
-#endif  // !_MSC_VER
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 Tile_Layer::Tile_Layer()
-  : ::google::protobuf::MessageLite() , _arena_ptr_(NULL) {
+  : ::google::protobuf::MessageLite(), _arena_ptr_(NULL) {
   SharedCtor();
   // @@protoc_insertion_point(constructor:vector_tile.Tile.Layer)
+}
+
+Tile_Layer::Tile_Layer(::google::protobuf::Arena* arena)
+  : ::google::protobuf::MessageLite(),
+  _extensions_(arena),
+  _arena_ptr_(arena),
+  features_(arena),
+  keys_(arena),
+  values_(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:vector_tile.Tile.Layer)
 }
 
 void Tile_Layer::InitAsDefaultInstance() {
@@ -929,6 +1013,8 @@ Tile_Layer::Tile_Layer(const Tile_Layer& from)
 void Tile_Layer::SharedCtor() {
   ::google::protobuf::internal::GetEmptyString();
   _cached_size_ = 0;
+  _unknown_fields_.UnsafeSetDefault(
+      &::google::protobuf::internal::GetEmptyStringAlreadyInited());
   version_ = 1u;
   name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   extent_ = 4096u;
@@ -941,7 +1027,14 @@ Tile_Layer::~Tile_Layer() {
 }
 
 void Tile_Layer::SharedDtor() {
-  name_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (GetArenaNoVirtual() != NULL) {
+    return;
+  }
+
+  _unknown_fields_.Destroy(
+      &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      GetArenaNoVirtual());
+  name_.Destroy(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
   #ifdef GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER
   if (this != &default_instance()) {
   #else
@@ -950,6 +1043,12 @@ void Tile_Layer::SharedDtor() {
   }
 }
 
+void Tile_Layer::ArenaDtor(void* object) {
+  Tile_Layer* _this = reinterpret_cast< Tile_Layer* >(object);
+  (void)_this;
+}
+void Tile_Layer::RegisterArenaDtor(::google::protobuf::Arena* arena) {
+}
 void Tile_Layer::SetCachedSize(int size) const {
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
   _cached_size_ = size;
@@ -967,19 +1066,16 @@ const Tile_Layer& Tile_Layer::default_instance() {
 Tile_Layer* Tile_Layer::default_instance_ = NULL;
 
 Tile_Layer* Tile_Layer::New(::google::protobuf::Arena* arena) const {
-  Tile_Layer* n = new Tile_Layer;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
+  return ::google::protobuf::Arena::CreateMessage<Tile_Layer>(arena);
 }
 
 void Tile_Layer::Clear() {
+// @@protoc_insertion_point(message_clear_start:vector_tile.Tile.Layer)
   _extensions_.Clear();
-  if (_has_bits_[0 / 32] & 35) {
+  if (_has_bits_[0 / 32] & 35u) {
     version_ = 1u;
     if (has_name()) {
-      name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+      name_.ClearToEmpty(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
     }
     extent_ = 4096u;
   }
@@ -987,17 +1083,20 @@ void Tile_Layer::Clear() {
   keys_.Clear();
   values_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
-  mutable_unknown_fields()->clear();
+  _unknown_fields_.ClearToEmpty(
+      &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      GetArenaNoVirtual());
 }
 
 bool Tile_Layer::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  ::google::protobuf::io::StringOutputStream unknown_fields_string(
-      mutable_unknown_fields());
+  ::google::protobuf::io::LazyStringOutputStream unknown_fields_string(
+      ::google::protobuf::internal::NewPermanentCallback(
+          &MutableUnknownFieldsForTile_Layer, this));
   ::google::protobuf::io::CodedOutputStream unknown_fields_stream(
-      &unknown_fields_string);
+      &unknown_fields_string, false);
   // @@protoc_insertion_point(parse_start:vector_tile.Tile.Layer)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
@@ -1020,12 +1119,15 @@ bool Tile_Layer::MergePartialFromCodedStream(
       case 2: {
         if (tag == 18) {
          parse_features:
-          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+          DO_(input->IncrementRecursionDepth());
+         parse_loop_features:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtualNoRecursionDepth(
                 input, add_features()));
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(18)) goto parse_features;
+        if (input->ExpectTag(18)) goto parse_loop_features;
+        input->UnsafeDecrementRecursionDepth();
         if (input->ExpectTag(26)) goto parse_keys;
         break;
       }
@@ -1048,12 +1150,15 @@ bool Tile_Layer::MergePartialFromCodedStream(
       case 4: {
         if (tag == 34) {
          parse_values:
-          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+          DO_(input->IncrementRecursionDepth());
+         parse_loop_values:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtualNoRecursionDepth(
                 input, add_values()));
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(34)) goto parse_values;
+        if (input->ExpectTag(34)) goto parse_loop_values;
+        input->UnsafeDecrementRecursionDepth();
         if (input->ExpectTag(40)) goto parse_extent;
         break;
       }
@@ -1162,11 +1267,12 @@ void Tile_Layer::SerializeWithCachedSizes(
       16, 536870912, output);
 
   output->WriteRaw(unknown_fields().data(),
-                   (int) unknown_fields().size());
+                   static_cast<int>(unknown_fields().size()));
   // @@protoc_insertion_point(serialize_end:vector_tile.Tile.Layer)
 }
 
 int Tile_Layer::RequiredFieldsByteSizeFallback() const {
+// @@protoc_insertion_point(required_fields_byte_size_fallback_start:vector_tile.Tile.Layer)
   int total_size = 0;
 
   if (has_version()) {
@@ -1186,6 +1292,7 @@ int Tile_Layer::RequiredFieldsByteSizeFallback() const {
   return total_size;
 }
 int Tile_Layer::ByteSize() const {
+// @@protoc_insertion_point(message_byte_size_start:vector_tile.Tile.Layer)
   int total_size = 0;
 
   if (((_has_bits_[0] & 0x00000003) ^ 0x00000003) == 0) {  // All required fields are present.
@@ -1248,6 +1355,7 @@ void Tile_Layer::CheckTypeAndMergeFrom(
 }
 
 void Tile_Layer::MergeFrom(const Tile_Layer& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:vector_tile.Tile.Layer)
   if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
   features_.MergeFrom(from.features_);
   keys_.MergeFrom(from.keys_);
@@ -1257,18 +1365,20 @@ void Tile_Layer::MergeFrom(const Tile_Layer& from) {
       set_version(from.version());
     }
     if (from.has_name()) {
-      set_has_name();
-      name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.name_);
+      set_name(from.name());
     }
     if (from.has_extent()) {
       set_extent(from.extent());
     }
   }
   _extensions_.MergeFrom(from._extensions_);
-  mutable_unknown_fields()->append(from.unknown_fields());
+  if (!from.unknown_fields().empty()) {
+    mutable_unknown_fields()->append(from.unknown_fields());
+  }
 }
 
 void Tile_Layer::CopyFrom(const Tile_Layer& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:vector_tile.Tile.Layer)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -1284,6 +1394,18 @@ bool Tile_Layer::IsInitialized() const {
 
 void Tile_Layer::Swap(Tile_Layer* other) {
   if (other == this) return;
+  if (GetArenaNoVirtual() == other->GetArenaNoVirtual()) {
+    InternalSwap(other);
+  } else {
+    Tile_Layer temp;
+    temp.MergeFrom(*this);
+    CopyFrom(*other);
+    other->CopyFrom(temp);
+  }
+}
+void Tile_Layer::UnsafeArenaSwap(Tile_Layer* other) {
+  if (other == this) return;
+  GOOGLE_DCHECK(GetArenaNoVirtual() == other->GetArenaNoVirtual());
   InternalSwap(other);
 }
 void Tile_Layer::InternalSwap(Tile_Layer* other) {
@@ -1294,7 +1416,7 @@ void Tile_Layer::InternalSwap(Tile_Layer* other) {
   values_.UnsafeArenaSwap(&other->values_);
   std::swap(extent_, other->extent_);
   std::swap(_has_bits_[0], other->_has_bits_[0]);
-  _unknown_fields_.swap(other->_unknown_fields_);
+  _unknown_fields_.Swap(&other->_unknown_fields_);
   std::swap(_cached_size_, other->_cached_size_);
   _extensions_.Swap(&other->_extensions_);
 }
@@ -1306,14 +1428,24 @@ void Tile_Layer::InternalSwap(Tile_Layer* other) {
 
 // -------------------------------------------------------------------
 
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int Tile::kLayersFieldNumber;
-#endif  // !_MSC_VER
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 Tile::Tile()
-  : ::google::protobuf::MessageLite() , _arena_ptr_(NULL) {
+  : ::google::protobuf::MessageLite(), _arena_ptr_(NULL) {
   SharedCtor();
   // @@protoc_insertion_point(constructor:vector_tile.Tile)
+}
+
+Tile::Tile(::google::protobuf::Arena* arena)
+  : ::google::protobuf::MessageLite(),
+  _extensions_(arena),
+  _arena_ptr_(arena),
+  layers_(arena) {
+  SharedCtor();
+  RegisterArenaDtor(arena);
+  // @@protoc_insertion_point(arena_constructor:vector_tile.Tile)
 }
 
 void Tile::InitAsDefaultInstance() {
@@ -1328,7 +1460,10 @@ Tile::Tile(const Tile& from)
 }
 
 void Tile::SharedCtor() {
+  ::google::protobuf::internal::GetEmptyString();
   _cached_size_ = 0;
+  _unknown_fields_.UnsafeSetDefault(
+      &::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -1338,6 +1473,13 @@ Tile::~Tile() {
 }
 
 void Tile::SharedDtor() {
+  if (GetArenaNoVirtual() != NULL) {
+    return;
+  }
+
+  _unknown_fields_.Destroy(
+      &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      GetArenaNoVirtual());
   #ifdef GOOGLE_PROTOBUF_NO_STATIC_INITIALIZER
   if (this != &default_instance()) {
   #else
@@ -1346,6 +1488,12 @@ void Tile::SharedDtor() {
   }
 }
 
+void Tile::ArenaDtor(void* object) {
+  Tile* _this = reinterpret_cast< Tile* >(object);
+  (void)_this;
+}
+void Tile::RegisterArenaDtor(::google::protobuf::Arena* arena) {
+}
 void Tile::SetCachedSize(int size) const {
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
   _cached_size_ = size;
@@ -1363,28 +1511,28 @@ const Tile& Tile::default_instance() {
 Tile* Tile::default_instance_ = NULL;
 
 Tile* Tile::New(::google::protobuf::Arena* arena) const {
-  Tile* n = new Tile;
-  if (arena != NULL) {
-    arena->Own(n);
-  }
-  return n;
+  return ::google::protobuf::Arena::CreateMessage<Tile>(arena);
 }
 
 void Tile::Clear() {
+// @@protoc_insertion_point(message_clear_start:vector_tile.Tile)
   _extensions_.Clear();
   layers_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
-  mutable_unknown_fields()->clear();
+  _unknown_fields_.ClearToEmpty(
+      &::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      GetArenaNoVirtual());
 }
 
 bool Tile::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  ::google::protobuf::io::StringOutputStream unknown_fields_string(
-      mutable_unknown_fields());
+  ::google::protobuf::io::LazyStringOutputStream unknown_fields_string(
+      ::google::protobuf::internal::NewPermanentCallback(
+          &MutableUnknownFieldsForTile, this));
   ::google::protobuf::io::CodedOutputStream unknown_fields_stream(
-      &unknown_fields_string);
+      &unknown_fields_string, false);
   // @@protoc_insertion_point(parse_start:vector_tile.Tile)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
@@ -1394,13 +1542,15 @@ bool Tile::MergePartialFromCodedStream(
       // repeated .vector_tile.Tile.Layer layers = 3;
       case 3: {
         if (tag == 26) {
-         parse_layers:
-          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+          DO_(input->IncrementRecursionDepth());
+         parse_loop_layers:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtualNoRecursionDepth(
                 input, add_layers()));
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(26)) goto parse_layers;
+        if (input->ExpectTag(26)) goto parse_loop_layers;
+        input->UnsafeDecrementRecursionDepth();
         if (input->ExpectAtEnd()) goto success;
         break;
       }
@@ -1451,11 +1601,12 @@ void Tile::SerializeWithCachedSizes(
       16, 8192, output);
 
   output->WriteRaw(unknown_fields().data(),
-                   (int) unknown_fields().size());
+                   static_cast<int>(unknown_fields().size()));
   // @@protoc_insertion_point(serialize_end:vector_tile.Tile)
 }
 
 int Tile::ByteSize() const {
+// @@protoc_insertion_point(message_byte_size_start:vector_tile.Tile)
   int total_size = 0;
 
   // repeated .vector_tile.Tile.Layer layers = 3;
@@ -1482,13 +1633,17 @@ void Tile::CheckTypeAndMergeFrom(
 }
 
 void Tile::MergeFrom(const Tile& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:vector_tile.Tile)
   if (GOOGLE_PREDICT_FALSE(&from == this)) MergeFromFail(__LINE__);
   layers_.MergeFrom(from.layers_);
   _extensions_.MergeFrom(from._extensions_);
-  mutable_unknown_fields()->append(from.unknown_fields());
+  if (!from.unknown_fields().empty()) {
+    mutable_unknown_fields()->append(from.unknown_fields());
+  }
 }
 
 void Tile::CopyFrom(const Tile& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:vector_tile.Tile)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -1503,12 +1658,24 @@ bool Tile::IsInitialized() const {
 
 void Tile::Swap(Tile* other) {
   if (other == this) return;
+  if (GetArenaNoVirtual() == other->GetArenaNoVirtual()) {
+    InternalSwap(other);
+  } else {
+    Tile temp;
+    temp.MergeFrom(*this);
+    CopyFrom(*other);
+    other->CopyFrom(temp);
+  }
+}
+void Tile::UnsafeArenaSwap(Tile* other) {
+  if (other == this) return;
+  GOOGLE_DCHECK(GetArenaNoVirtual() == other->GetArenaNoVirtual());
   InternalSwap(other);
 }
 void Tile::InternalSwap(Tile* other) {
   layers_.UnsafeArenaSwap(&other->layers_);
   std::swap(_has_bits_[0], other->_has_bits_[0]);
-  _unknown_fields_.swap(other->_unknown_fields_);
+  _unknown_fields_.Swap(&other->_unknown_fields_);
   std::swap(_cached_size_, other->_cached_size_);
   _extensions_.Swap(&other->_extensions_);
 }
@@ -1517,6 +1684,620 @@ void Tile::InternalSwap(Tile* other) {
   return "vector_tile.Tile";
 }
 
+#if PROTOBUF_INLINE_NOT_IN_HEADERS
+// Tile_Value
+
+// optional string string_value = 1;
+bool Tile_Value::has_string_value() const {
+  return (_has_bits_[0] & 0x00000001u) != 0;
+}
+void Tile_Value::set_has_string_value() {
+  _has_bits_[0] |= 0x00000001u;
+}
+void Tile_Value::clear_has_string_value() {
+  _has_bits_[0] &= ~0x00000001u;
+}
+void Tile_Value::clear_string_value() {
+  string_value_.ClearToEmpty(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
+  clear_has_string_value();
+}
+ const ::std::string& Tile_Value::string_value() const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Value.string_value)
+  return string_value_.Get(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+ void Tile_Value::set_string_value(const ::std::string& value) {
+  set_has_string_value();
+  string_value_.Set(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value, GetArenaNoVirtual());
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Value.string_value)
+}
+ void Tile_Value::set_string_value(const char* value) {
+  set_has_string_value();
+  string_value_.Set(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArenaNoVirtual());
+  // @@protoc_insertion_point(field_set_char:vector_tile.Tile.Value.string_value)
+}
+ void Tile_Value::set_string_value(const char* value,
+    size_t size) {
+  set_has_string_value();
+  string_value_.Set(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArenaNoVirtual());
+  // @@protoc_insertion_point(field_set_pointer:vector_tile.Tile.Value.string_value)
+}
+ ::std::string* Tile_Value::mutable_string_value() {
+  set_has_string_value();
+  // @@protoc_insertion_point(field_mutable:vector_tile.Tile.Value.string_value)
+  return string_value_.Mutable(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
+}
+ ::std::string* Tile_Value::release_string_value() {
+  // @@protoc_insertion_point(field_release:vector_tile.Tile.Value.string_value)
+  clear_has_string_value();
+  return string_value_.Release(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
+}
+ ::std::string* Tile_Value::unsafe_arena_release_string_value() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:vector_tile.Tile.Value.string_value)
+  GOOGLE_DCHECK(GetArenaNoVirtual() != NULL);
+  clear_has_string_value();
+  return string_value_.UnsafeArenaRelease(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      GetArenaNoVirtual());
+}
+ void Tile_Value::set_allocated_string_value(::std::string* string_value) {
+  if (string_value != NULL) {
+    set_has_string_value();
+  } else {
+    clear_has_string_value();
+  }
+  string_value_.SetAllocated(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), string_value,
+      GetArenaNoVirtual());
+  // @@protoc_insertion_point(field_set_allocated:vector_tile.Tile.Value.string_value)
+}
+ void Tile_Value::unsafe_arena_set_allocated_string_value(
+    ::std::string* string_value) {
+  GOOGLE_DCHECK(GetArenaNoVirtual() != NULL);
+  if (string_value != NULL) {
+    set_has_string_value();
+  } else {
+    clear_has_string_value();
+  }
+  string_value_.UnsafeArenaSetAllocated(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      string_value, GetArenaNoVirtual());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:vector_tile.Tile.Value.string_value)
+}
+
+// optional float float_value = 2;
+bool Tile_Value::has_float_value() const {
+  return (_has_bits_[0] & 0x00000002u) != 0;
+}
+void Tile_Value::set_has_float_value() {
+  _has_bits_[0] |= 0x00000002u;
+}
+void Tile_Value::clear_has_float_value() {
+  _has_bits_[0] &= ~0x00000002u;
+}
+void Tile_Value::clear_float_value() {
+  float_value_ = 0;
+  clear_has_float_value();
+}
+ float Tile_Value::float_value() const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Value.float_value)
+  return float_value_;
+}
+ void Tile_Value::set_float_value(float value) {
+  set_has_float_value();
+  float_value_ = value;
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Value.float_value)
+}
+
+// optional double double_value = 3;
+bool Tile_Value::has_double_value() const {
+  return (_has_bits_[0] & 0x00000004u) != 0;
+}
+void Tile_Value::set_has_double_value() {
+  _has_bits_[0] |= 0x00000004u;
+}
+void Tile_Value::clear_has_double_value() {
+  _has_bits_[0] &= ~0x00000004u;
+}
+void Tile_Value::clear_double_value() {
+  double_value_ = 0;
+  clear_has_double_value();
+}
+ double Tile_Value::double_value() const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Value.double_value)
+  return double_value_;
+}
+ void Tile_Value::set_double_value(double value) {
+  set_has_double_value();
+  double_value_ = value;
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Value.double_value)
+}
+
+// optional int64 int_value = 4;
+bool Tile_Value::has_int_value() const {
+  return (_has_bits_[0] & 0x00000008u) != 0;
+}
+void Tile_Value::set_has_int_value() {
+  _has_bits_[0] |= 0x00000008u;
+}
+void Tile_Value::clear_has_int_value() {
+  _has_bits_[0] &= ~0x00000008u;
+}
+void Tile_Value::clear_int_value() {
+  int_value_ = GOOGLE_LONGLONG(0);
+  clear_has_int_value();
+}
+ ::google::protobuf::int64 Tile_Value::int_value() const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Value.int_value)
+  return int_value_;
+}
+ void Tile_Value::set_int_value(::google::protobuf::int64 value) {
+  set_has_int_value();
+  int_value_ = value;
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Value.int_value)
+}
+
+// optional uint64 uint_value = 5;
+bool Tile_Value::has_uint_value() const {
+  return (_has_bits_[0] & 0x00000010u) != 0;
+}
+void Tile_Value::set_has_uint_value() {
+  _has_bits_[0] |= 0x00000010u;
+}
+void Tile_Value::clear_has_uint_value() {
+  _has_bits_[0] &= ~0x00000010u;
+}
+void Tile_Value::clear_uint_value() {
+  uint_value_ = GOOGLE_ULONGLONG(0);
+  clear_has_uint_value();
+}
+ ::google::protobuf::uint64 Tile_Value::uint_value() const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Value.uint_value)
+  return uint_value_;
+}
+ void Tile_Value::set_uint_value(::google::protobuf::uint64 value) {
+  set_has_uint_value();
+  uint_value_ = value;
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Value.uint_value)
+}
+
+// optional sint64 sint_value = 6;
+bool Tile_Value::has_sint_value() const {
+  return (_has_bits_[0] & 0x00000020u) != 0;
+}
+void Tile_Value::set_has_sint_value() {
+  _has_bits_[0] |= 0x00000020u;
+}
+void Tile_Value::clear_has_sint_value() {
+  _has_bits_[0] &= ~0x00000020u;
+}
+void Tile_Value::clear_sint_value() {
+  sint_value_ = GOOGLE_LONGLONG(0);
+  clear_has_sint_value();
+}
+ ::google::protobuf::int64 Tile_Value::sint_value() const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Value.sint_value)
+  return sint_value_;
+}
+ void Tile_Value::set_sint_value(::google::protobuf::int64 value) {
+  set_has_sint_value();
+  sint_value_ = value;
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Value.sint_value)
+}
+
+// optional bool bool_value = 7;
+bool Tile_Value::has_bool_value() const {
+  return (_has_bits_[0] & 0x00000040u) != 0;
+}
+void Tile_Value::set_has_bool_value() {
+  _has_bits_[0] |= 0x00000040u;
+}
+void Tile_Value::clear_has_bool_value() {
+  _has_bits_[0] &= ~0x00000040u;
+}
+void Tile_Value::clear_bool_value() {
+  bool_value_ = false;
+  clear_has_bool_value();
+}
+ bool Tile_Value::bool_value() const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Value.bool_value)
+  return bool_value_;
+}
+ void Tile_Value::set_bool_value(bool value) {
+  set_has_bool_value();
+  bool_value_ = value;
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Value.bool_value)
+}
+
+// -------------------------------------------------------------------
+
+// Tile_Feature
+
+// optional uint64 id = 1 [default = 0];
+bool Tile_Feature::has_id() const {
+  return (_has_bits_[0] & 0x00000001u) != 0;
+}
+void Tile_Feature::set_has_id() {
+  _has_bits_[0] |= 0x00000001u;
+}
+void Tile_Feature::clear_has_id() {
+  _has_bits_[0] &= ~0x00000001u;
+}
+void Tile_Feature::clear_id() {
+  id_ = GOOGLE_ULONGLONG(0);
+  clear_has_id();
+}
+ ::google::protobuf::uint64 Tile_Feature::id() const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Feature.id)
+  return id_;
+}
+ void Tile_Feature::set_id(::google::protobuf::uint64 value) {
+  set_has_id();
+  id_ = value;
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Feature.id)
+}
+
+// repeated uint32 tags = 2 [packed = true];
+int Tile_Feature::tags_size() const {
+  return tags_.size();
+}
+void Tile_Feature::clear_tags() {
+  tags_.Clear();
+}
+ ::google::protobuf::uint32 Tile_Feature::tags(int index) const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Feature.tags)
+  return tags_.Get(index);
+}
+ void Tile_Feature::set_tags(int index, ::google::protobuf::uint32 value) {
+  tags_.Set(index, value);
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Feature.tags)
+}
+ void Tile_Feature::add_tags(::google::protobuf::uint32 value) {
+  tags_.Add(value);
+  // @@protoc_insertion_point(field_add:vector_tile.Tile.Feature.tags)
+}
+ const ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >&
+Tile_Feature::tags() const {
+  // @@protoc_insertion_point(field_list:vector_tile.Tile.Feature.tags)
+  return tags_;
+}
+ ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >*
+Tile_Feature::mutable_tags() {
+  // @@protoc_insertion_point(field_mutable_list:vector_tile.Tile.Feature.tags)
+  return &tags_;
+}
+
+// optional .vector_tile.Tile.GeomType type = 3 [default = UNKNOWN];
+bool Tile_Feature::has_type() const {
+  return (_has_bits_[0] & 0x00000004u) != 0;
+}
+void Tile_Feature::set_has_type() {
+  _has_bits_[0] |= 0x00000004u;
+}
+void Tile_Feature::clear_has_type() {
+  _has_bits_[0] &= ~0x00000004u;
+}
+void Tile_Feature::clear_type() {
+  type_ = 0;
+  clear_has_type();
+}
+ ::vector_tile::Tile_GeomType Tile_Feature::type() const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Feature.type)
+  return static_cast< ::vector_tile::Tile_GeomType >(type_);
+}
+ void Tile_Feature::set_type(::vector_tile::Tile_GeomType value) {
+  assert(::vector_tile::Tile_GeomType_IsValid(value));
+  set_has_type();
+  type_ = value;
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Feature.type)
+}
+
+// repeated uint32 geometry = 4 [packed = true];
+int Tile_Feature::geometry_size() const {
+  return geometry_.size();
+}
+void Tile_Feature::clear_geometry() {
+  geometry_.Clear();
+}
+ ::google::protobuf::uint32 Tile_Feature::geometry(int index) const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Feature.geometry)
+  return geometry_.Get(index);
+}
+ void Tile_Feature::set_geometry(int index, ::google::protobuf::uint32 value) {
+  geometry_.Set(index, value);
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Feature.geometry)
+}
+ void Tile_Feature::add_geometry(::google::protobuf::uint32 value) {
+  geometry_.Add(value);
+  // @@protoc_insertion_point(field_add:vector_tile.Tile.Feature.geometry)
+}
+ const ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >&
+Tile_Feature::geometry() const {
+  // @@protoc_insertion_point(field_list:vector_tile.Tile.Feature.geometry)
+  return geometry_;
+}
+ ::google::protobuf::RepeatedField< ::google::protobuf::uint32 >*
+Tile_Feature::mutable_geometry() {
+  // @@protoc_insertion_point(field_mutable_list:vector_tile.Tile.Feature.geometry)
+  return &geometry_;
+}
+
+// -------------------------------------------------------------------
+
+// Tile_Layer
+
+// required uint32 version = 15 [default = 1];
+bool Tile_Layer::has_version() const {
+  return (_has_bits_[0] & 0x00000001u) != 0;
+}
+void Tile_Layer::set_has_version() {
+  _has_bits_[0] |= 0x00000001u;
+}
+void Tile_Layer::clear_has_version() {
+  _has_bits_[0] &= ~0x00000001u;
+}
+void Tile_Layer::clear_version() {
+  version_ = 1u;
+  clear_has_version();
+}
+ ::google::protobuf::uint32 Tile_Layer::version() const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Layer.version)
+  return version_;
+}
+ void Tile_Layer::set_version(::google::protobuf::uint32 value) {
+  set_has_version();
+  version_ = value;
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Layer.version)
+}
+
+// required string name = 1;
+bool Tile_Layer::has_name() const {
+  return (_has_bits_[0] & 0x00000002u) != 0;
+}
+void Tile_Layer::set_has_name() {
+  _has_bits_[0] |= 0x00000002u;
+}
+void Tile_Layer::clear_has_name() {
+  _has_bits_[0] &= ~0x00000002u;
+}
+void Tile_Layer::clear_name() {
+  name_.ClearToEmpty(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
+  clear_has_name();
+}
+ const ::std::string& Tile_Layer::name() const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Layer.name)
+  return name_.Get(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+ void Tile_Layer::set_name(const ::std::string& value) {
+  set_has_name();
+  name_.Set(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value, GetArenaNoVirtual());
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Layer.name)
+}
+ void Tile_Layer::set_name(const char* value) {
+  set_has_name();
+  name_.Set(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
+              GetArenaNoVirtual());
+  // @@protoc_insertion_point(field_set_char:vector_tile.Tile.Layer.name)
+}
+ void Tile_Layer::set_name(const char* value,
+    size_t size) {
+  set_has_name();
+  name_.Set(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(
+      reinterpret_cast<const char*>(value), size), GetArenaNoVirtual());
+  // @@protoc_insertion_point(field_set_pointer:vector_tile.Tile.Layer.name)
+}
+ ::std::string* Tile_Layer::mutable_name() {
+  set_has_name();
+  // @@protoc_insertion_point(field_mutable:vector_tile.Tile.Layer.name)
+  return name_.Mutable(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
+}
+ ::std::string* Tile_Layer::release_name() {
+  // @@protoc_insertion_point(field_release:vector_tile.Tile.Layer.name)
+  clear_has_name();
+  return name_.Release(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), GetArenaNoVirtual());
+}
+ ::std::string* Tile_Layer::unsafe_arena_release_name() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:vector_tile.Tile.Layer.name)
+  GOOGLE_DCHECK(GetArenaNoVirtual() != NULL);
+  clear_has_name();
+  return name_.UnsafeArenaRelease(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      GetArenaNoVirtual());
+}
+ void Tile_Layer::set_allocated_name(::std::string* name) {
+  if (name != NULL) {
+    set_has_name();
+  } else {
+    clear_has_name();
+  }
+  name_.SetAllocated(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), name,
+      GetArenaNoVirtual());
+  // @@protoc_insertion_point(field_set_allocated:vector_tile.Tile.Layer.name)
+}
+ void Tile_Layer::unsafe_arena_set_allocated_name(
+    ::std::string* name) {
+  GOOGLE_DCHECK(GetArenaNoVirtual() != NULL);
+  if (name != NULL) {
+    set_has_name();
+  } else {
+    clear_has_name();
+  }
+  name_.UnsafeArenaSetAllocated(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      name, GetArenaNoVirtual());
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:vector_tile.Tile.Layer.name)
+}
+
+// repeated .vector_tile.Tile.Feature features = 2;
+int Tile_Layer::features_size() const {
+  return features_.size();
+}
+void Tile_Layer::clear_features() {
+  features_.Clear();
+}
+const ::vector_tile::Tile_Feature& Tile_Layer::features(int index) const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Layer.features)
+  return features_.Get(index);
+}
+::vector_tile::Tile_Feature* Tile_Layer::mutable_features(int index) {
+  // @@protoc_insertion_point(field_mutable:vector_tile.Tile.Layer.features)
+  return features_.Mutable(index);
+}
+::vector_tile::Tile_Feature* Tile_Layer::add_features() {
+  // @@protoc_insertion_point(field_add:vector_tile.Tile.Layer.features)
+  return features_.Add();
+}
+::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Feature >*
+Tile_Layer::mutable_features() {
+  // @@protoc_insertion_point(field_mutable_list:vector_tile.Tile.Layer.features)
+  return &features_;
+}
+const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Feature >&
+Tile_Layer::features() const {
+  // @@protoc_insertion_point(field_list:vector_tile.Tile.Layer.features)
+  return features_;
+}
+
+// repeated string keys = 3;
+int Tile_Layer::keys_size() const {
+  return keys_.size();
+}
+void Tile_Layer::clear_keys() {
+  keys_.Clear();
+}
+ const ::std::string& Tile_Layer::keys(int index) const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Layer.keys)
+  return keys_.Get(index);
+}
+ ::std::string* Tile_Layer::mutable_keys(int index) {
+  // @@protoc_insertion_point(field_mutable:vector_tile.Tile.Layer.keys)
+  return keys_.Mutable(index);
+}
+ void Tile_Layer::set_keys(int index, const ::std::string& value) {
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Layer.keys)
+  keys_.Mutable(index)->assign(value);
+}
+ void Tile_Layer::set_keys(int index, const char* value) {
+  keys_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:vector_tile.Tile.Layer.keys)
+}
+ void Tile_Layer::set_keys(int index, const char* value, size_t size) {
+  keys_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:vector_tile.Tile.Layer.keys)
+}
+ ::std::string* Tile_Layer::add_keys() {
+  // @@protoc_insertion_point(field_add_mutable:vector_tile.Tile.Layer.keys)
+  return keys_.Add();
+}
+ void Tile_Layer::add_keys(const ::std::string& value) {
+  keys_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:vector_tile.Tile.Layer.keys)
+}
+ void Tile_Layer::add_keys(const char* value) {
+  keys_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:vector_tile.Tile.Layer.keys)
+}
+ void Tile_Layer::add_keys(const char* value, size_t size) {
+  keys_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:vector_tile.Tile.Layer.keys)
+}
+ const ::google::protobuf::RepeatedPtrField< ::std::string>&
+Tile_Layer::keys() const {
+  // @@protoc_insertion_point(field_list:vector_tile.Tile.Layer.keys)
+  return keys_;
+}
+ ::google::protobuf::RepeatedPtrField< ::std::string>*
+Tile_Layer::mutable_keys() {
+  // @@protoc_insertion_point(field_mutable_list:vector_tile.Tile.Layer.keys)
+  return &keys_;
+}
+
+// repeated .vector_tile.Tile.Value values = 4;
+int Tile_Layer::values_size() const {
+  return values_.size();
+}
+void Tile_Layer::clear_values() {
+  values_.Clear();
+}
+const ::vector_tile::Tile_Value& Tile_Layer::values(int index) const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Layer.values)
+  return values_.Get(index);
+}
+::vector_tile::Tile_Value* Tile_Layer::mutable_values(int index) {
+  // @@protoc_insertion_point(field_mutable:vector_tile.Tile.Layer.values)
+  return values_.Mutable(index);
+}
+::vector_tile::Tile_Value* Tile_Layer::add_values() {
+  // @@protoc_insertion_point(field_add:vector_tile.Tile.Layer.values)
+  return values_.Add();
+}
+::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Value >*
+Tile_Layer::mutable_values() {
+  // @@protoc_insertion_point(field_mutable_list:vector_tile.Tile.Layer.values)
+  return &values_;
+}
+const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Value >&
+Tile_Layer::values() const {
+  // @@protoc_insertion_point(field_list:vector_tile.Tile.Layer.values)
+  return values_;
+}
+
+// optional uint32 extent = 5 [default = 4096];
+bool Tile_Layer::has_extent() const {
+  return (_has_bits_[0] & 0x00000020u) != 0;
+}
+void Tile_Layer::set_has_extent() {
+  _has_bits_[0] |= 0x00000020u;
+}
+void Tile_Layer::clear_has_extent() {
+  _has_bits_[0] &= ~0x00000020u;
+}
+void Tile_Layer::clear_extent() {
+  extent_ = 4096u;
+  clear_has_extent();
+}
+ ::google::protobuf::uint32 Tile_Layer::extent() const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.Layer.extent)
+  return extent_;
+}
+ void Tile_Layer::set_extent(::google::protobuf::uint32 value) {
+  set_has_extent();
+  extent_ = value;
+  // @@protoc_insertion_point(field_set:vector_tile.Tile.Layer.extent)
+}
+
+// -------------------------------------------------------------------
+
+// Tile
+
+// repeated .vector_tile.Tile.Layer layers = 3;
+int Tile::layers_size() const {
+  return layers_.size();
+}
+void Tile::clear_layers() {
+  layers_.Clear();
+}
+const ::vector_tile::Tile_Layer& Tile::layers(int index) const {
+  // @@protoc_insertion_point(field_get:vector_tile.Tile.layers)
+  return layers_.Get(index);
+}
+::vector_tile::Tile_Layer* Tile::mutable_layers(int index) {
+  // @@protoc_insertion_point(field_mutable:vector_tile.Tile.layers)
+  return layers_.Mutable(index);
+}
+::vector_tile::Tile_Layer* Tile::add_layers() {
+  // @@protoc_insertion_point(field_add:vector_tile.Tile.layers)
+  return layers_.Add();
+}
+::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Layer >*
+Tile::mutable_layers() {
+  // @@protoc_insertion_point(field_mutable_list:vector_tile.Tile.layers)
+  return &layers_;
+}
+const ::google::protobuf::RepeatedPtrField< ::vector_tile::Tile_Layer >&
+Tile::layers() const {
+  // @@protoc_insertion_point(field_list:vector_tile.Tile.layers)
+  return layers_;
+}
+
+#endif  // PROTOBUF_INLINE_NOT_IN_HEADERS
 
 // @@protoc_insertion_point(namespace_scope)
 

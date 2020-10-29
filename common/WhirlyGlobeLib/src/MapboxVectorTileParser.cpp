@@ -112,7 +112,39 @@ void MapboxVectorTileParser::addCategory(const std::string &category,long long s
 {
     styleCategories[styleID] = category;
 }
-    
+
+#if DEBUG
+namespace {
+    using namespace google::protobuf;
+    static std::atomic<intptr_t> arenaCookie(0);
+    static void* onArenaInit(Arena* arena)
+    {
+        const auto cookie = (void*)++arenaCookie;
+        wkLogLevel(Verbose, "Protobuf Arena [%lld] : initialized - %lld/%lld", cookie, arena->SpaceUsed(), arena->SpaceAllocated());
+        return cookie;
+    }
+
+    static void onArenaReset(Arena* arena, void* cookie, uint64 spaceUsed)
+    {
+        wkLogLevel(Verbose, "Protobuf Arena [%lld] : reset - %lld/%lld", cookie, spaceUsed, arena->SpaceAllocated());
+    }
+
+    static void onArenaDestruction(Arena* arena, void* cookie, uint64 spaceUsed)
+    {
+        wkLogLevel(Verbose, "Protobuf Arena [%lld] : destroyed - %lld/%lld", cookie, spaceUsed, arena->SpaceAllocated());
+    }
+
+    // type_info is promised to be static - its lifetime extends to
+    // match program's lifetime (It is given by typeid operator).
+    // Note: typeid(void) will be passed as allocated_type every time we
+    // intentionally want to avoid monitoring an allocation. (i.e. internal
+    // allocations for managing the arena)
+    static void onArenaAllocation(const std::type_info* allocated_type, uint64 alloc_size, void* cookie)
+    {
+    }
+}
+#endif
+
 bool MapboxVectorTileParser::parse(PlatformThreadInfo *styleInst,RawData *rawData,VectorTileData *tileData)
 {
     //calulate tile bounds and coordinate shift
@@ -148,35 +180,47 @@ bool MapboxVectorTileParser::parse(PlatformThreadInfo *styleInst,RawData *rawDat
     const auto &tileId = tileData->ident;
     
     google::protobuf::ArenaOptions arenaOptions;
+
+    // Assume the unpacked tile will take up at least some multiple of the packed size.
     arenaOptions.start_block_size = 2 * rawData->getLen();
-    arenaOptions.max_block_size = 10 * rawData->getLen();
-    arenaOptions.initial_block = nullptr;
-    arenaOptions.initial_block_size = 0;
+    arenaOptions.max_block_size = 100 * rawData->getLen();
+    
+    // The initial block in the arena is in our stack space, which
+    // allows very small tiles to parse without any heap allocations.
+    // This value may need to be platform-specific.
+    char arenaStack[8192];
+    arenaOptions.initial_block = &arenaStack[0];
+    arenaOptions.initial_block_size = sizeof(arenaStack);
+    
+#if DEBUG
     arenaOptions.block_alloc = nullptr;
     arenaOptions.block_dealloc = nullptr;
-    arenaOptions.on_arena_init = nullptr;
-    arenaOptions.on_arena_reset = nullptr;
-    arenaOptions.on_arena_destruction = nullptr;
-    arenaOptions.on_arena_allocation = nullptr;
+    google::protobuf::arena_metrics::EnableArenaMetrics(&arenaOptions);
+    //arenaOptions.on_arena_init = onArenaInit;
+    //arenaOptions.on_arena_reset = onArenaReset;
+    //arenaOptions.on_arena_destruction = onArenaDestruction;
+    //arenaOptions.on_arena_allocation = onArenaAllocation;
+#endif
                                 
     google::protobuf::Arena arena;
-    vector_tile::Tile *arena_tile = nullptr;
-    vector_tile::Tile non_arena_tile;
+    vector_tile::Tile *arenaTile = nullptr;
+    vector_tile::Tile nonArenaTile;
 
-    static bool use_arena = false;
+    static bool use_arena = true;
     // Try arena-based parsing, if enabled
     if (use_arena) {
-        arena_tile = non_arena_tile.New(&arena);    // WhyTF isn't this static?
-        //arena_tile = google::protobuf::Arena::CreateMessage<vector_tile::Tile>(&arena);   // Right out of the docs. Why does't this work?
-        if (!arena_tile) {
+        //arenaTile = arena.Create<vector_tile::Tile>(&arena);
+        arenaTile = arena.CreateMessage<vector_tile::Tile>(&arena);
+        //arenaTile = arena.CreateMaybeMessage<vector_tile::Tile>(&arena);
+        if (!arenaTile) {
             wkLogLevel(Warn, "Protobuf arena allocation failed, %d:%d/%d (%lld bytes)",
                        tileId.level, tileId.x, tileId.y, rawData->getLen());
         }
     }
-    auto &tile = arena_tile ? *arena_tile : non_arena_tile;
+    auto &tile = arenaTile ? *arenaTile : nonArenaTile;
 
     // If arena allocation is disabled or failed, try parsing on the heap
-    if (tile.ParseFromArray(rawData->getRawData(), (int)rawData->getLen())) {
+    if (!tile.ParseFromArray(rawData->getRawData(), (int)rawData->getLen())) {
         wkLogLevel(Warn, "Protobuf parsing failed, %d:%d/%d (%lld bytes)",
                    tileId.level, tileId.x, tileId.y, rawData->getLen());
         return false;
