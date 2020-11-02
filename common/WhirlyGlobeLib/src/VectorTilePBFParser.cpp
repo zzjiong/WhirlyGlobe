@@ -14,8 +14,8 @@
 #import "WhirlyKitLog.h"
 #import "DictionaryC.h"
 
-#import "../nanopb/pb.h"
-#import "../nanopb/pb_decode.h"
+#import "../../local_libs/nanopb/pb.h"
+#import "../../local_libs/nanopb/pb_decode.h"
 #import "vector_tile.pb.h"
 
 #import <vector>
