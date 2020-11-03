@@ -20,7 +20,7 @@
 #include <vector>
 
 typedef struct pb_istream_s pb_istream_t;
-typedef struct pb_field_iter_s pb_field_iter_t;
+typedef struct pb_field_s pb_field_t;
 typedef struct _vector_tile_Tile vector_tile_Tile;
 typedef struct _vector_tile_Tile_Feature vector_tile_Tile_Feature;
 typedef struct _vector_tile_Tile_Layer vector_tile_Tile_Layer;
@@ -92,16 +92,16 @@ private:
     static inline std::pair<uint8_t, int32_t> decodeCommand(int32_t c);
 
     // nanopb callbacks
-    static bool layerDecode(pb_istream_t *stream, const pb_field_iter_t *field, void **arg);
-    static bool featureDecode(pb_istream_t *stream, const pb_field_iter_t *field, void **arg);
-    static bool stringDecode(pb_istream_t *stream, const pb_field_iter_t *field, void **arg);
-    static bool stringVecDecode(pb_istream_t *stream, const pb_field_iter_t *field, void **arg);
-    static bool intVecDecode(pb_istream_t *stream, const pb_field_iter_t *field, void **arg);
-    static bool valueVecDecode(pb_istream_t *stream, const pb_field_iter_t *field, void **arg);
+    static bool layerDecode(pb_istream_t *stream, const pb_field_t *field, void **arg);
+    static bool featureDecode(pb_istream_t *stream, const pb_field_t *field, void **arg);
+    static bool stringDecode(pb_istream_t *stream, const pb_field_t *field, void **arg);
+    static bool stringVecDecode(pb_istream_t *stream, const pb_field_t *field, void **arg);
+    static bool intVecDecode(pb_istream_t *stream, const pb_field_t *field, void **arg);
+    static bool valueVecDecode(pb_istream_t *stream, const pb_field_t *field, void **arg);
 
     // Wrapped callbacks
-    inline bool layerDecode(pb_istream_t *stream, const pb_field_iter_t *field);
-    inline bool featureDecode(pb_istream_t *stream, const pb_field_iter_t *field);
+    inline bool layerDecode(pb_istream_t *stream, const pb_field_t *field);
+    inline bool featureDecode(pb_istream_t *stream, const pb_field_t *field);
 
     // Parsing methods
     inline bool processTags(const MutableDictionaryCRef &attributes);

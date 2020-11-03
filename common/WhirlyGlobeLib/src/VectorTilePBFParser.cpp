@@ -14,8 +14,7 @@
 #import "WhirlyKitLog.h"
 #import "DictionaryC.h"
 
-#import "../../local_libs/nanopb/pb.h"
-#import "../../local_libs/nanopb/pb_decode.h"
+#import "pb_decode.h"
 #import "vector_tile.pb.h"
 
 #import <vector>
@@ -109,12 +108,12 @@ bool VectorTilePBFParser::parse(const uint8_t* data, size_t length)
 }
 
 // Tile contains a collection of Layers
-bool VectorTilePBFParser::layerDecode(pb_istream_t *stream, const pb_field_iter_t *field, void **arg)
+bool VectorTilePBFParser::layerDecode(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
     return (*(This**)arg)->layerDecode(stream, field);
 }
 
-bool VectorTilePBFParser::layerDecode(pb_istream_t *stream, const pb_field_iter_t *field)
+bool VectorTilePBFParser::layerDecode(pb_istream_t *stream, const pb_field_t *field)
 {
     vector_tile_Tile_Layer layer = _defaultLayer;
     _currentLayer = &layer;
@@ -147,12 +146,12 @@ std::pair<uint8_t, int32_t> VectorTilePBFParser::decodeCommand(int32_t c) {
 }
 
 // Layer contains a collection of Features
-bool VectorTilePBFParser::featureDecode(pb_istream_t *stream, const pb_field_iter_t *field, void **arg)
+bool VectorTilePBFParser::featureDecode(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
     return (*(This**)arg)->featureDecode(stream, field);
 }
 
-bool VectorTilePBFParser::featureDecode(pb_istream_t *stream, const pb_field_iter_t *field)
+bool VectorTilePBFParser::featureDecode(pb_istream_t *stream, const pb_field_t *field)
 {
     layerElement();
 
@@ -591,7 +590,7 @@ void VectorTilePBFParser::addFeature(const VectorObjectRef &vecObj, const Simple
 }
     
 // Layer contains a collection of Values
-bool VectorTilePBFParser::valueVecDecode(pb_istream_t *stream, const pb_field_iter_t *field, void **arg) {
+bool VectorTilePBFParser::valueVecDecode(pb_istream_t *stream, const pb_field_t *field, void **arg) {
     auto &vec = **(std::vector<SmallValue>**)arg;
     
     std::string_view string;
@@ -669,22 +668,24 @@ bool VectorTilePBFParser::layerFinish()
 }
 
 // Decode a string into a variable
-bool VectorTilePBFParser::stringDecode(pb_istream_t *stream, const pb_field_iter_t *field, void **arg)
+bool VectorTilePBFParser::stringDecode(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
     *((std::string_view*)*arg) = std::string_view((char*)stream->state, stream->bytes_left);
+    stream->bytes_left = 0;
     return true;
 }
 
 // Decode a single string into a vector
-bool VectorTilePBFParser::stringVecDecode(pb_istream_t *stream, const pb_field_iter_t *field, void **arg)
+bool VectorTilePBFParser::stringVecDecode(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
     auto &vec = **(std::vector<std::string_view>**)arg;
     vec.push_back(std::string_view((char*)stream->state, stream->bytes_left));
+    stream->bytes_left = 0;
     return true;
 }
 
 // Decode a repeated-integer into a vector
-bool VectorTilePBFParser::intVecDecode(pb_istream_t *stream, const pb_field_iter_t *field, void **arg)
+bool VectorTilePBFParser::intVecDecode(pb_istream_t *stream, const pb_field_t *field, void **arg)
 {
     auto &vec = **(std::vector<uint32_t>**)arg;
     if (vec.empty())
@@ -700,6 +701,7 @@ bool VectorTilePBFParser::intVecDecode(pb_istream_t *stream, const pb_field_iter
         }
         vec.push_back((uint32_t)value);
     }
+    stream->bytes_left = 0;
     return true;
 }
 

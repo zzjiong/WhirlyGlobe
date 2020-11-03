@@ -13,5 +13,4 @@ if [[ $1 != *dev ]]
 then sed -i -e 's/"version":\s*"[^"]*"/"version": "'$VERSION_ONLY'"/' library.json
 fi
 
-sed -i -e 's/version =.*/version = "'$VERSION_ONLY'"/' conanfile.py
-sed -i -e 's/^version =.*/version = "'$VERSION_ONLY'"/' extra/poetry/pyproject.toml
+sed -i -e 's/version =.*/version = "'$VERSION_ONLY'"/' extra/poetry/pyproject.toml
