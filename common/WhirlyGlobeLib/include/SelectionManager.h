@@ -290,7 +290,7 @@ public:
     };
 
 protected:
-    static Eigen::Matrix2d calcScreenRot(float &screenRot,ViewStateRef viewState,WhirlyGlobe::GlobeViewState *globeViewState,ScreenSpaceObjectLocation *ssObj,const Point2f &objPt,const Eigen::Matrix4d &modelTrans,const Eigen::Matrix4d &normalMat,const Point2f &frameBufferSize);
+    static Eigen::Matrix2d calcScreenRot(float &screenRot,const ViewStateRef &viewState,const WhirlyGlobe::GlobeViewState *globeViewState,const ScreenSpaceObjectLocation &ssObj,const Point2f &objPt,const Eigen::Matrix4d &modelTrans,const Eigen::Matrix4d &normalMat,const Point2f &frameBufferSize);
     // Projects a world coordinate to one or more points on the screen (wrapping)
     void projectWorldPointToScreen(const Point3d &worldLoc,const PlacementInfo &pInfo,Point2dVector &screenPts,float scale);
     // Convert rect selectables into more generic screen space objects

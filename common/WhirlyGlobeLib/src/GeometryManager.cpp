@@ -746,22 +746,23 @@ SimpleIdentity GeometryManager::addBaseGeometry(std::vector<GeometryRaw *> &geom
     }
 
     // Instance the geometry once for now
-    Matrix4d instMat = Matrix4d::Identity();
+    const Matrix4d instMat = Matrix4d::Identity();
     
     // Convert the sorted lists of geometry into drawables
     for (unsigned int jj=0;jj<sortedGeom.size();jj++)
     {
-        std::vector<GeometryRaw *> &sg = sortedGeom[jj];
+        const std::vector<GeometryRaw *> &sg = sortedGeom[jj];
         for (unsigned int kk=0;kk<sg.size();kk++)
         {
             std::vector<BasicDrawableBuilderRef> draws;
             GeometryRaw *raw = sg[kk];
+            draws.reserve(raw->triangles.size());
             raw->buildDrawables(draws,instMat,NULL,&geomInfo,renderer);
             
             // Set the various parameters and store the drawables created
             for (unsigned int ll=0;ll<draws.size();ll++)
             {
-                BasicDrawableBuilderRef draw = draws[ll];
+                const BasicDrawableBuilderRef &draw = draws[ll];
                 draw->setType((raw->type == WhirlyKitGeometryLines ? Lines : Triangles));
                 draw->setOnOff(false);
                 draw->setRequestZBuffer(true);

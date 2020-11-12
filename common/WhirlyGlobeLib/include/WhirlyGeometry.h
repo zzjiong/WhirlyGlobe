@@ -66,7 +66,8 @@ bool IntersectLines(const Point2f &a0,const Point2f &a1,const Point2f &b0,const 
 void ClipHomogeneousPolygon(const Vector4dVector &pts,Vector4dVector &outPts);
 	
 /// Project and clip a given polygon to screen space.  Clips in homogeneous coordinates.
-void ClipAndProjectPolygon(Eigen::Matrix4d &modelMat,Eigen::Matrix4d &projMat,Point2f frameSize,Point3dVector &poly,Point2fVector &screenPoly);
+void ClipAndProjectPolygon(const Eigen::Matrix4d &modelMat,const Eigen::Matrix4d &projMat,Point2f frameSize,
+                           const Point3dVector &poly,Point2fVector &screenPoly);
         
 /// Return the area of the 3D polygon
 float PolygonArea(const Point3fVector &poly,const Point3f &norm);

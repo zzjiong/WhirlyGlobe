@@ -680,50 +680,58 @@ void SelectionManager::removeSelectables(const SimpleIDSet &selectIDs)
 
 void SelectionManager::getScreenSpaceObjects(const PlacementInfo &pInfo,std::vector<ScreenSpaceObjectLocation> &screenPts,TimeInterval now)
 {
-    for (RectSelectable2DSet::iterator it = rect2Dselectables.begin();
-         it != rect2Dselectables.end(); ++it)
+    for (const auto &sel : rect2Dselectables)
     {
-        const RectSelectable2D &sel = *it;
-        if (sel.selectID != EmptyIdentity && sel.enable)
+        if (sel.enable && sel.selectID != EmptyIdentity)
         {
             if (sel.minVis == DrawVisibleInvalid ||
                 (sel.minVis < pInfo.heightAboveSurface && pInfo.heightAboveSurface < sel.maxVis))
             {
-                ScreenSpaceObjectLocation objLoc;
+                if (screenPts.empty())
+                {
+                    screenPts.reserve(rect2Dselectables.size() + movingRect2Dselectables.size());
+                }
+
+                screenPts.emplace_back();
+                auto &objLoc = screenPts.back();
                 objLoc.shapeIDs.push_back(sel.selectID);
                 objLoc.dispLoc = sel.center;
                 objLoc.offset = Point2d(0,0);
+                objLoc.pts.reserve(4);
                 for (unsigned int ii=0;ii<4;ii++)
                 {
-                    Point2f pt = sel.pts[ii];
-                    objLoc.pts.push_back(Point2d(pt.x(),pt.y()));
+                    const Point2f &pt = sel.pts[ii];
+                    objLoc.pts.emplace_back(pt.x(),pt.y());
                     objLoc.mbr.addPoint(pt);
                 }
-                screenPts.push_back(objLoc);
             }
         }
     }
 
-    for (MovingRectSelectable2DSet::iterator it = movingRect2Dselectables.begin();
-         it != movingRect2Dselectables.end(); ++it)
+    for (const auto &sel : movingRect2Dselectables)
     {
-        const MovingRectSelectable2D &sel = *it;
         if (sel.selectID != EmptyIdentity)
         {
             if (sel.minVis == DrawVisibleInvalid ||
                 (sel.minVis < pInfo.heightAboveSurface && pInfo.heightAboveSurface < sel.maxVis))
             {
-                ScreenSpaceObjectLocation objLoc;
+                if (screenPts.empty())
+                {
+                    screenPts.reserve(movingRect2Dselectables.size());
+                }
+                
+                screenPts.emplace_back();
+                auto &objLoc = screenPts.back();
                 objLoc.shapeIDs.push_back(sel.selectID);
                 objLoc.dispLoc = sel.centerForTime(now);
                 objLoc.offset = Point2d(0,0);
+                objLoc.pts.reserve(4);
                 for (unsigned int ii=0;ii<4;ii++)
                 {
-                    Point2f pt = sel.pts[ii];
-                    objLoc.pts.push_back(Point2d(pt.x(),pt.y()));
+                    const Point2f &pt = sel.pts[ii];
+                    objLoc.pts.emplace_back(pt.x(),pt.y());
                     objLoc.mbr.addPoint(pt);
                 }
-                screenPts.push_back(objLoc);
             }
         }
     }
@@ -818,11 +826,14 @@ SimpleIdentity SelectionManager::pickObject(Point2f touchPt,float maxDist,ViewSt
     return selObjs[0].selectIDs[0];
 }
 
-Matrix2d SelectionManager::calcScreenRot(float &screenRot,ViewStateRef viewState,WhirlyGlobe::GlobeViewState *globeViewState,ScreenSpaceObjectLocation *ssObj,const Point2f &objPt,const Matrix4d &modelTrans,const Matrix4d &normalMat,const Point2f &frameBufferSize)
+// TODO: this is nearly identical to LayoutManager::calcScreenRot, see if we can reduce the duplication
+Matrix2d SelectionManager::calcScreenRot(float &screenRot,const ViewStateRef &viewState,const WhirlyGlobe::GlobeViewState *globeViewState,
+                                         const ScreenSpaceObjectLocation &ssObj,const Point2f &objPt,const Matrix4d &modelTrans,
+                                         const Matrix4d &normalMat,const Point2f &frameBufferSize)
 {
     // Switch from counter-clockwise to clockwise
-    double rot = 2*M_PI-ssObj->rotation;
-    
+    const double rot = 2*M_PI-ssObj.rotation;
+
     Point3d upVec,northVec,eastVec;
     if (!globeViewState)
     {
@@ -830,23 +841,23 @@ Matrix2d SelectionManager::calcScreenRot(float &screenRot,ViewStateRef viewState
         northVec = Point3d(0,1,0);
         eastVec = Point3d(1,0,0);
     } else {
-        upVec = ssObj->dispLoc.normalized();
+        upVec = ssObj.dispLoc.normalized();
         // Vector pointing north
-        northVec = Point3d(-ssObj->dispLoc.x(),-ssObj->dispLoc.y(),1.0-ssObj->dispLoc.z());
+        northVec = Point3d(-ssObj.dispLoc.x(),-ssObj.dispLoc.y(),1.0-ssObj.dispLoc.z());
         eastVec = northVec.cross(upVec);
         northVec = upVec.cross(eastVec);
     }
     
     // This vector represents the rotation in world space
-    Point3d rotVec = eastVec * sin(rot) + northVec * cos(rot);
+    const Point3d rotVec = eastVec * sin(rot) + northVec * cos(rot);
     
     // Project down into screen space
-    Vector4d projRot = normalMat * Vector4d(rotVec.x(),rotVec.y(),rotVec.z(),0.0);
+    const Vector4d projRot = normalMat * Vector4d(rotVec.x(),rotVec.y(),rotVec.z(),0.0);
     
     // Use the resulting x & y
     screenRot = atan2(projRot.y(),projRot.x())-M_PI/2.0;
     // Keep the labels upright
-    if (ssObj->keepUpright)
+    if (ssObj.keepUpright)
         if (screenRot > M_PI/2 && screenRot < 3*M_PI/2)
             screenRot = screenRot + M_PI;
     Matrix2d screenRotMat;
@@ -860,27 +871,25 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
 {
     if (!renderer)
         return;
-    float maxDist2 = maxDist * maxDist;
-    
+
     // All the various parameters we need to evalute... stuff
     PlacementInfo pInfo(viewState,renderer);
     if (!pInfo.globeViewState && !pInfo.mapViewState)
         return;
-    
-    TimeInterval now = scene->getCurrentTime();
+
+    const double maxDist2 = (double)maxDist * maxDist;
+    const TimeInterval now = scene->getCurrentTime();
 
     // And the eye vector for billboards
-    Vector4d eyeVec4 = pInfo.viewState->fullMatrices[0].inverse() * Vector4d(0,0,1,0);
-    Vector3d eyeVec(eyeVec4.x(),eyeVec4.y(),eyeVec4.z());
-    Matrix4d modelTrans = pInfo.viewState->fullMatrices[0];
-    Matrix4d normalMat = pInfo.viewState->fullMatrices[0].inverse().transpose();
+    const Vector4d eyeVec4 = pInfo.viewState->fullMatrices[0].inverse() * Vector4d(0,0,1,0);
+    const Vector3d eyeVec(eyeVec4.x(),eyeVec4.y(),eyeVec4.z());
+    const Matrix4d modelTrans = pInfo.viewState->fullMatrices[0];
+    const Matrix4d normalMat = pInfo.viewState->fullMatrices[0].inverse().transpose();
 
-    Point2f frameBufferSize;
-    frameBufferSize.x() = renderer->framebufferWidth;
-    frameBufferSize.y() = renderer->framebufferHeight;
+    const Point2f frameBufferSize(renderer->framebufferWidth, renderer->framebufferHeight);
 
     LayoutManager *layoutManager = (LayoutManager *)scene->getManager(kWKLayoutManager);
-    
+
     std::lock_guard<std::mutex> guardLock(mutex);
 
     // Figure out where the screen space objects are, both layout manager
@@ -893,12 +902,12 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
     // Work through the 2D rectangles
     for (unsigned int ii=0;ii<ssObjs.size();ii++)
     {
-        ScreenSpaceObjectLocation &screenObj = ssObjs[ii];
+        const ScreenSpaceObjectLocation &screenObj = ssObjs[ii];
         
         Point2dVector projPts;
         projectWorldPointToScreen(screenObj.dispLoc, pInfo, projPts, renderer->getScale());
         
-        float closeDist2 = MAXFLOAT;
+        double closeDist2 = std::numeric_limits<double>::max();
         // Work through the possible locations of the projected point
         for (unsigned int jj=0;jj<projPts.size();jj++)
         {
@@ -915,10 +924,9 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
             {
                 Matrix2d screenRotMat;
                 float screenRot = 0.0;
-                Point2f objPt;
-                objPt.x() = projPt.x();  objPt.y() = projPt.y();
+                const Point2f objPt(projPt.x(), projPt.y());
                 if (screenObj.rotation != 0.0)
-                    screenRotMat = calcScreenRot(screenRot,pInfo.viewState,pInfo.globeViewState,&screenObj,objPt,modelTrans,normalMat,frameBufferSize);
+                    screenRotMat = calcScreenRot(screenRot,pInfo.viewState,pInfo.globeViewState,screenObj,objPt,modelTrans,normalMat,frameBufferSize);
 
                 Point2fVector screenPts;
                 if (screenRot == 0.0)
@@ -926,27 +934,26 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
                     for (unsigned int kk=0;kk<screenObj.pts.size();kk++)
                     {
                         const Point2d &screenObjPt = screenObj.pts[kk];
-                        Point2d theScreenPt = Point2d(screenObjPt.x(),-screenObjPt.y()) + projPt + Point2d(screenObj.offset.x(),-screenObj.offset.y());
-                        screenPts.push_back(Point2f(theScreenPt.x(),theScreenPt.y()));
+                        const Point2d theScreenPt = Point2d(screenObjPt.x(),-screenObjPt.y()) + projPt + Point2d(screenObj.offset.x(),-screenObj.offset.y());
+                        screenPts.emplace_back(theScreenPt.x(),theScreenPt.y());
                     }
                 } else {
-                    Point2d center(objPt.x(),objPt.y());
+                    const Point2d center(objPt.x(),objPt.y());
                     for (unsigned int kk=0;kk<screenObj.pts.size();kk++)
                     {
                         const Point2d screenObjPt = screenRotMat * (screenObj.pts[kk] + Point2d(screenObj.offset.x(),screenObj.offset.y()));
-                        Point2d theScreenPt = Point2d(screenObjPt.x(),-screenObjPt.y()) + projPt;
-                        screenPts.push_back(Point2f(theScreenPt.x(),theScreenPt.y()));
+                        const Point2d theScreenPt = Point2d(screenObjPt.x(),-screenObjPt.y()) + projPt;
+                        screenPts.emplace_back(theScreenPt.x(),theScreenPt.y());
                     }
                 }
                 
                 // See if we fall within that polygon
                 if (PointInPolygon(touchPt, screenPts))
                 {
-                    for (auto shapeID : screenObj.shapeIDs)
+                    for (const auto shapeID : screenObj.shapeIDs)
                     {
-                        SelectedObject selObj(shapeID,0.0,0.0);
-                        selObj.isCluster = screenObj.isCluster;
-                        selObjs.push_back(selObj);
+                        selObjs.emplace_back(shapeID,0.0,0.0);
+                        selObjs.back().isCluster = screenObj.isCluster;
                     }
                     break;
                 }
@@ -955,8 +962,8 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
                 for (unsigned int ii=0;ii<screenObj.pts.size();ii++)
                 {
                     float t;
-                    Point2f closePt = ClosestPointOnLineSegment(screenPts[ii],screenPts[(ii+1)%4],touchPt,t);
-                    float dist2 = (closePt-touchPt).squaredNorm();
+                    const Point2f closePt = ClosestPointOnLineSegment(screenPts[ii],screenPts[(ii+1)%4],touchPt,t);
+                    const double dist2 = (closePt-touchPt).squaredNorm();
                     closeDist2 = std::min(dist2,closeDist2);
                 }
             }
@@ -966,9 +973,8 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
         {
             for (auto shapeID : screenObj.shapeIDs)
             {
-                SelectedObject selObj(shapeID,0.0,sqrtf(closeDist2));
-                selObj.isCluster = screenObj.isCluster;
-                selObjs.push_back(selObj);
+                selObjs.emplace_back(shapeID,0.0,sqrt(closeDist2));
+                selObjs.back().isCluster = screenObj.isCluster;
             }
         }
         
@@ -978,35 +984,29 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
         }
     }
 
-    Point3d eyePos;
-    if (pInfo.globeViewState)
-        eyePos = pInfo.globeViewState->eyePos;
-    else
-        eyePos = pInfo.mapViewState->eyePos;
+    const Point3d eyePos = pInfo.globeViewState ? pInfo.globeViewState->eyePos : pInfo.mapViewState->eyePos;
 
     if (!polytopeSelectables.empty())
     {
         // Work through the axis aligned rectangular solids
-        for (PolytopeSelectableSet::iterator it = polytopeSelectables.begin();
-             it != polytopeSelectables.end(); ++it)
+        for (const auto &sel : polytopeSelectables)
         {
-            PolytopeSelectable sel = *it;
             if (sel.selectID != EmptyIdentity && sel.enable)
             {
                 if (sel.minVis == DrawVisibleInvalid ||
                     (sel.minVis < pInfo.heightAboveSurface && pInfo.heightAboveSurface < sel.maxVis))
                 {
-                    float closeDist2 = MAXFLOAT;
+                    double closeDist2 = std::numeric_limits<double>::max();
                     // Project each plane to the screen, including clipping
                     for (unsigned int ii=0;ii<sel.polys.size();ii++)
                     {
-                        Point3fVector &poly3f = sel.polys[ii];
+                        const Point3fVector &poly3f = sel.polys[ii];
                         Point3dVector poly;
                         poly.reserve(poly3f.size());
                         for (unsigned int jj=0;jj<poly3f.size();jj++)
                         {
-                            Point3f &pt = poly3f[jj];
-                            poly.push_back(Point3d(pt.x()+sel.centerPt.x(),pt.y()+sel.centerPt.y(),pt.z()+sel.centerPt.z()));
+                            const Point3f &pt = poly3f[jj];
+                            poly.emplace_back(pt.x()+sel.centerPt.x(),pt.y()+sel.centerPt.y(),pt.z()+sel.centerPt.z());
                         }
                         
                         Point2fVector screenPts;
@@ -1023,8 +1023,8 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
                             for (unsigned int jj=0;jj<screenPts.size();jj++)
                             {
                                 float t;
-                                Point2f closePt = ClosestPointOnLineSegment(screenPts[jj],screenPts[(jj+1)%4],touchPt,t);
-                                float dist2 = (closePt-touchPt).squaredNorm();
+                                const Point2f closePt = ClosestPointOnLineSegment(screenPts[jj],screenPts[(jj+1)%4],touchPt,t);
+                                const double dist2 = (closePt-touchPt).squaredNorm();
                                 closeDist2 = std::min(dist2,closeDist2);
                             }
                         }
@@ -1032,9 +1032,8 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
 
                     if (closeDist2 < maxDist2)
                     {
-                        float dist3d = (sel.centerPt - eyePos).norm();
-                        SelectedObject selObj(sel.selectID,dist3d,sqrtf(closeDist2));
-                        selObjs.push_back(selObj);
+                        const float dist3d = (sel.centerPt - eyePos).norm();
+                        selObjs.emplace_back(sel.selectID,dist3d,sqrt(closeDist2));
                     }
                 }
             }
@@ -1044,30 +1043,28 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
     if (!movingPolytopeSelectables.empty())
     {
         // Work through the axis aligned rectangular solids
-        for (MovingPolytopeSelectableSet::iterator it = movingPolytopeSelectables.begin();
-             it != movingPolytopeSelectables.end(); ++it)
+        for (const auto &sel : movingPolytopeSelectables)
         {
-            MovingPolytopeSelectable sel = *it;
             if (sel.selectID != EmptyIdentity && sel.enable)
             {
                 if (sel.minVis == DrawVisibleInvalid ||
                     (sel.minVis < pInfo.heightAboveSurface && pInfo.heightAboveSurface < sel.maxVis))
                 {
                     // Current center
-                    double t = (now-sel.startTime)/sel.duration;
-                    Point3d centerPt = (sel.endCenterPt - sel.centerPt)*t + sel.centerPt;
+                    const double t = (now-sel.startTime)/sel.duration;
+                    const Point3d centerPt = (sel.endCenterPt - sel.centerPt)*t + sel.centerPt;
                     
-                    float closeDist2 = MAXFLOAT;
+                    double closeDist2 = std::numeric_limits<double>::max();
                     // Project each plane to the screen, including clipping
                     for (unsigned int ii=0;ii<sel.polys.size();ii++)
                     {
-                        Point3fVector &poly3f = sel.polys[ii];
+                        const Point3fVector &poly3f = sel.polys[ii];
                         Point3dVector poly;
                         poly.reserve(poly3f.size());
                         for (unsigned int jj=0;jj<poly3f.size();jj++)
                         {
-                            Point3f &pt = poly3f[jj];
-                            poly.push_back(Point3d(pt.x()+centerPt.x(),pt.y()+centerPt.y(),pt.z()+centerPt.z()));
+                            const Point3f &pt = poly3f[jj];
+                            poly.emplace_back(pt.x()+centerPt.x(),pt.y()+centerPt.y(),pt.z()+centerPt.z());
                         }
                         
                         Point2fVector screenPts;
@@ -1084,8 +1081,8 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
                             for (unsigned int jj=0;jj<screenPts.size();jj++)
                             {
                                 float t;
-                                Point2f closePt = ClosestPointOnLineSegment(screenPts[jj],screenPts[(jj+1)%4],touchPt,t);
-                                float dist2 = (closePt-touchPt).squaredNorm();
+                                const Point2f closePt = ClosestPointOnLineSegment(screenPts[jj],screenPts[(jj+1)%4],touchPt,t);
+                                const double dist2 = (closePt-touchPt).squaredNorm();
                                 closeDist2 = std::min(dist2,closeDist2);
                             }
                         }
@@ -1093,9 +1090,8 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
                     
                     if (closeDist2 < maxDist2)
                     {
-                        float dist3d = (centerPt - eyePos).norm();
-                        SelectedObject selObj(sel.selectID,dist3d,sqrtf(closeDist2));
-                        selObjs.push_back(selObj);
+                        const float dist3d = (centerPt - eyePos).norm();
+                        selObjs.emplace_back(sel.selectID,dist3d,sqrt(closeDist2));
                     }
                 }
             }
@@ -1104,11 +1100,8 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
     
     if (!linearSelectables.empty())
     {
-        for (LinearSelectableSet::iterator it = linearSelectables.begin();
-             it != linearSelectables.end(); ++it)
+        for (const auto &sel : linearSelectables)
         {
-            LinearSelectable sel = *it;
-            
             if (sel.selectID != EmptyIdentity && sel.enable)
             {
                 if (sel.minVis == DrawVisibleInvalid ||
@@ -1116,8 +1109,8 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
                 {
                     Point2dVector p0Pts;
                     projectWorldPointToScreen(sel.pts[0],pInfo,p0Pts,renderer->getScale());
-                    float closeDist2 = MAXFLOAT;
-                    float closeDist3d = MAXFLOAT;
+                    double closeDist2 = std::numeric_limits<double>::max();
+                    double closeDist3d = std::numeric_limits<double>::max();
                     for (unsigned int ip=1;ip<sel.pts.size();ip++)
                     {
                         Point2dVector p1Pts;
@@ -1129,13 +1122,14 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
                             for (unsigned int iw=0;iw<p0Pts.size();iw++)
                             {
                                 float t;
-                                Point2f closePt = ClosestPointOnLineSegment(Point2f(p0Pts[iw].x(),p0Pts[iw].y()),Point2f(p1Pts[iw].x(),p1Pts[iw].y()),touchPt,t);
-                                float dist2 = (closePt-touchPt).squaredNorm();
+                                const Point2f closePt = ClosestPointOnLineSegment(Point2f(p0Pts[iw].x(),p0Pts[iw].y()),
+                                                                                  Point2f(p1Pts[iw].x(),p1Pts[iw].y()),touchPt,t);
+                                const double dist2 = (closePt-touchPt).squaredNorm();
                                 if (dist2 < closeDist2)
                                 {
                                     // Calculate the point in 3D we almost hit
                                     const Point3d &p0 = sel.pts[ip-1], &p1 = sel.pts[ip];
-                                    Point3d midPt = (p1-p0)*t + p0;
+                                    const Point3d midPt = (p1-p0)*t + p0;
                                     closeDist3d = (midPt-eyePos).norm();
                                     closeDist2 = dist2;
                                 }
@@ -1146,8 +1140,7 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
                     }
                     if (closeDist2 < maxDist2)
                     {
-                        SelectedObject selObj(sel.selectID,closeDist3d,sqrtf(closeDist2));
-                        selObjs.push_back(selObj);
+                        selObjs.emplace_back(sel.selectID,closeDist3d,sqrt(closeDist2));
                     }
                 }
             }
@@ -1157,10 +1150,8 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
     if (!rect3Dselectables.empty())
     {
         // Work through the 3D rectangles
-        for (RectSelectable3DSet::iterator it = rect3Dselectables.begin();
-             it != rect3Dselectables.end(); ++it)
+        for (const auto &sel : rect3Dselectables)
         {
-            RectSelectable3D sel = *it;
             if (sel.selectID != EmptyIdentity && sel.enable)
             {
                 if (sel.minVis == DrawVisibleInvalid ||
@@ -1170,17 +1161,15 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
                     
                     for (unsigned int ii=0;ii<4;ii++)
                     {
-                        Point2f screenPt;
-                        Point3d pt3d(sel.pts[ii].x(),sel.pts[ii].y(),sel.pts[ii].z());
-                        if (pInfo.globeViewState)
-                            screenPt = pInfo.globeViewState->pointOnScreenFromDisplay(pt3d, &pInfo.viewState->fullMatrices[0], pInfo.frameSizeScale);
-                        else
-                            screenPt = pInfo.mapViewState->pointOnScreenFromDisplay(pt3d, &pInfo.viewState->fullMatrices[0], pInfo.frameSizeScale);
+                        const Point3d pt3d(sel.pts[ii].x(),sel.pts[ii].y(),sel.pts[ii].z());
+                        const Point2f screenPt = pInfo.globeViewState ?
+                            pInfo.globeViewState->pointOnScreenFromDisplay(pt3d, &pInfo.viewState->fullMatrices[0], pInfo.frameSizeScale) :
+                            pInfo.mapViewState->pointOnScreenFromDisplay(pt3d, &pInfo.viewState->fullMatrices[0], pInfo.frameSizeScale);
                         screenPts.push_back(screenPt);
                     }
                     
-                    float closeDist2 = MAXFLOAT;
-                    float closeDist3d = MAXFLOAT;
+                    double closeDist2 = std::numeric_limits<double>::max();
+                    double closeDist3d = std::numeric_limits<double>::max();
 
                     // See if we fall within that polygon
                     if (PointInPolygon(touchPt, screenPts))
@@ -1196,10 +1185,10 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
                         for (unsigned int ii=0;ii<4;ii++)
                         {
                             float t;
-                            Point2f closePt = ClosestPointOnLineSegment(screenPts[ii],screenPts[(ii+1)%4],touchPt,t);
-                            float dist2 = (closePt-touchPt).squaredNorm();
+                            const Point2f closePt = ClosestPointOnLineSegment(screenPts[ii],screenPts[(ii+1)%4],touchPt,t);
+                            const double dist2 = (closePt-touchPt).squaredNorm();
                             const Point3d p0 = Vector3fToVector3d(sel.pts[ii]), p1 = Vector3fToVector3d(sel.pts[(ii+1)%4]);
-                            Point3d midPt = (p1-p0)*t + p0;
+                            const Point3d midPt = (p1-p0)*t + p0;
                             if (dist2 <= maxDist2 && (dist2 < closeDist2))
                             {
                                 closeDist2 = dist2;
@@ -1210,8 +1199,7 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
                     
                     if (closeDist2 < maxDist2)
                     {
-                        SelectedObject selObj(sel.selectID,closeDist3d,sqrtf(closeDist2));
-                        selObjs.push_back(selObj);
+                        selObjs.emplace_back(sel.selectID,closeDist3d,sqrtf(closeDist2));
                     }
                 }
             }
@@ -1221,31 +1209,29 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
     if (!billboardSelectables.empty())
     {
         // Work through the billboards
-        for (BillboardSelectableSet::iterator it = billboardSelectables.begin();
-             it != billboardSelectables.end(); ++it)
+        for (auto const &it : billboardSelectables)
         {
-            BillboardSelectable sel = *it;
-            if (sel.selectID != EmptyIdentity && sel.enable)
+            if (it.selectID != EmptyIdentity && it.enable)
             {
-                
                 // Come up with a rectangle in display space
-                Point3dVector poly(4);
-                Vector3d normal3d = sel.normal;
-                Point3d axisX = eyeVec.cross(normal3d);
-                Point3d center3d = sel.center;
+                Point3dVector poly(4);  // TODO: can we use std::array here?
+                const Vector3d normal3d = it.normal;
+                const Point3d axisX = eyeVec.cross(normal3d);
+                const Point3d center3d = it.center;
 //                Point3d axisZ = axisX.cross(Vector3fToVector3d(sel.normal));
-                poly[0] = -sel.size.x()/2.0 * axisX + center3d;
-                poly[3] = sel.size.x()/2.0 * axisX + center3d;
-                poly[2] = -sel.size.x()/2.0 * axisX + sel.size.y() * normal3d + center3d;
-                poly[1] = sel.size.x()/2.0 * axisX + sel.size.y() * normal3d + center3d;
+                poly[0] = -it.size.x()/2.0 * axisX + center3d;
+                poly[3] = it.size.x()/2.0 * axisX + center3d;
+                poly[2] = -it.size.x()/2.0 * axisX + it.size.y() * normal3d + center3d;
+                poly[1] = it.size.x()/2.0 * axisX + it.size.y() * normal3d + center3d;
                 
-                BillboardSelectable sel = *it;
+                // copy hides loop variable - intentional?
+                BillboardSelectable sel = it;
 
                 Point2fVector screenPts;
                 ClipAndProjectPolygon(pInfo.viewState->fullMatrices[0],pInfo.viewState->projMatrix,pInfo.frameSizeScale,poly,screenPts);
                 
-                float closeDist2 = MAXFLOAT;
-                float closeDist3d = MAXFLOAT;
+                double closeDist2 = std::numeric_limits<double>::max();
+                double closeDist3d = std::numeric_limits<double>::max();
 
                 if (screenPts.size() > 3)
                 {
@@ -1258,8 +1244,8 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
                     for (unsigned int jj=0;jj<screenPts.size();jj++)
                     {
                         float t;
-                        Point2f closePt = ClosestPointOnLineSegment(screenPts[jj],screenPts[(jj+1)%4],touchPt,t);
-                        float dist2 = (closePt-touchPt).squaredNorm();
+                        const Point2f closePt = ClosestPointOnLineSegment(screenPts[jj],screenPts[(jj+1)%4],touchPt,t);
+                        const double dist2 = (closePt-touchPt).squaredNorm();
                         if (dist2 < maxDist2 && dist2 < closeDist2)
                         {
                             closeDist3d = (sel.center - eyePos).norm();
@@ -1270,8 +1256,7 @@ void SelectionManager::pickObjects(Point2f touchPt,float maxDist,ViewStateRef vi
 
                 if (closeDist2 < maxDist2)
                 {
-                    SelectedObject selObj(sel.selectID,closeDist3d,sqrtf(closeDist2));
-                    selObjs.push_back(selObj);
+                    selObjs.emplace_back(sel.selectID,closeDist3d,sqrt(closeDist2));
                 }
             }
         }

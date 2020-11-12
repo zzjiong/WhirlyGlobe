@@ -468,26 +468,6 @@ void ScreenSpaceObject::setMovingLoc(const Point3d &worldLoc,TimeInterval inStar
     endTime = inEndTime;
 }
 
-Point3d ScreenSpaceObject::getEndWorldLoc()
-{
-    return endWorldLoc;
-}
-
-TimeInterval ScreenSpaceObject::getStartTime()
-{
-    return startTime;
-}
-
-TimeInterval ScreenSpaceObject::getEndTime()
-{
-    return endTime;
-}
-    
-Point3d ScreenSpaceObject::getWorldLoc()
-{
-    return worldLoc;
-}
-    
 void ScreenSpaceObject::setVisibility(float minVis,float maxVis)
 {
     state.minVis = minVis;
@@ -563,9 +543,9 @@ void ScreenSpaceObject::addGeometry(const ConvexGeometry &geom)
     geometry.push_back(geom);
 }
     
-SimpleIdentity ScreenSpaceObject::getTypicalProgramID()
+SimpleIdentity ScreenSpaceObject::getTypicalProgramID() const
 {
-    for (auto geom : geometry)
+    for (const auto &geom : geometry)
     {
         if (geom.progID != EmptyIdentity)
             return geom.progID;

@@ -292,6 +292,7 @@ void ClusterHelper::resolveClusters()
     
 void ClusterHelper::objectsForCluster(ClusterObject &cluster,std::vector<LayoutObjectEntry *> &layoutObjs)
 {
+    layoutObjs.reserve(layoutObjs.size() + cluster.children.size());
     for (int child : cluster.children)
         layoutObjs.push_back(simpleObjects[child].objEntry);
 }

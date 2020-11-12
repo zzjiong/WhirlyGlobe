@@ -273,50 +273,50 @@ bool insidePlane(const Vector4d &pt,ClipPlane plane)
 
 void ClipHomogeneousPolyToPlane(const Vector4dVector &pts,ClipPlane plane,Vector4dVector &outPts)
 {
-    outPts.reserve(pts.size());
+    outPts.reserve(3 * pts.size() / 2);
     for (unsigned int ii=0;ii<pts.size();ii++)
     {
         const Vector4d &p0 = pts[ii];
         const Vector4d &p1 = pts[(ii+1)%pts.size()];
-        bool p0_in = insidePlane(p0,plane);
-        bool p1_in = insidePlane(p1,plane);
+        const bool p0_in = insidePlane(p0,plane);
+        const bool p1_in = insidePlane(p1,plane);
         // Edge crosses plane
         if (p0_in != p1_in)
         {
-            Vector4d newP = intersectPlane(p0,p1,plane);
-            outPts.push_back(newP);
+            outPts.push_back(intersectPlane(p0,p1,plane));
         }
         // 2nd vertex inside, add it
         if (p1_in)
             outPts.push_back(p1);
     }
 }
-    
+
 void ClipHomogeneousPolygon(const Vector4dVector &inPts,Vector4dVector &outPts)
 {
     if (inPts.size() < 3)
         return;
+
     Vector4dVector pts = inPts;
- 
-    ClipHomogeneousPolyToPlane(pts, Left, outPts);  pts = outPts;  outPts.clear();
-    ClipHomogeneousPolyToPlane(pts, Right, outPts);  pts = outPts;  outPts.clear();
-    ClipHomogeneousPolyToPlane(pts, Bottom, outPts);  pts = outPts;  outPts.clear();
-    ClipHomogeneousPolyToPlane(pts, Top, outPts);  pts = outPts;  outPts.clear();
-    ClipHomogeneousPolyToPlane(pts, Near, outPts);  pts = outPts;  outPts.clear();
-    ClipHomogeneousPolyToPlane(pts, Far, outPts);
+
+    ClipHomogeneousPolyToPlane(pts, Left,   outPts);  pts = std::move(outPts);  outPts.clear();
+    ClipHomogeneousPolyToPlane(pts, Right,  outPts);  pts = std::move(outPts);  outPts.clear();
+    ClipHomogeneousPolyToPlane(pts, Bottom, outPts);  pts = std::move(outPts);  outPts.clear();
+    ClipHomogeneousPolyToPlane(pts, Top,    outPts);  pts = std::move(outPts);  outPts.clear();
+    ClipHomogeneousPolyToPlane(pts, Near,   outPts);  pts = std::move(outPts);  outPts.clear();
+    ClipHomogeneousPolyToPlane(pts, Far,    outPts);
 }
 
-void ClipAndProjectPolygon(Eigen::Matrix4d &modelMat,Eigen::Matrix4d &projMat,Point2f frameSize,Point3dVector &poly,Point2fVector &screenPoly)
+void ClipAndProjectPolygon(const Eigen::Matrix4d &modelMat,const Eigen::Matrix4d &projMat,
+                           Point2f frameSize,const Point3dVector &poly,Point2fVector &screenPoly)
 {
     Vector4dVector pts;
     for (unsigned int ii=0;ii<poly.size();ii++)
     {
         const Point3d &pt = poly[ii];
         // Run through the model transform
-        Vector4d modPt = modelMat * Vector4d(pt.x(),pt.y(),pt.z(),1.0);
+        const Vector4d modPt = modelMat * Vector4d(pt.x(),pt.y(),pt.z(),1.0);
         // And then the projection matrix.  Now we're in clip space
-        Vector4d projPt = projMat * modPt;
-        pts.push_back(projPt);
+        pts.emplace_back(projMat * modPt);
     }
 
     Vector4dVector clipSpacePts;
@@ -326,14 +326,14 @@ void ClipAndProjectPolygon(Eigen::Matrix4d &modelMat,Eigen::Matrix4d &projMat,Po
         return;
     
     // Project to the screen
-    Point2d halfFrameSize(frameSize.x()/2.0,frameSize.y()/2.0);
+    const Point2d halfFrameSize(frameSize.x()/2.0,frameSize.y()/2.0);
+    screenPoly.reserve(clipSpacePts.size());
     for (unsigned int ii=0;ii<clipSpacePts.size();ii++)
     {
-        Vector4d &outPt = clipSpacePts[ii];
-        Point2f screenPt(outPt.x()/outPt.w() * halfFrameSize.x()+halfFrameSize.x(),outPt.y()/outPt.w() * halfFrameSize.y()+halfFrameSize.y());
-        screenPt.y() = frameSize.y() - screenPt.y();
-        screenPoly.push_back(screenPt);
-    }    
+        const Vector4d &outPt = clipSpacePts[ii];
+        screenPoly.emplace_back(outPt.x()/outPt.w() * halfFrameSize.x()+halfFrameSize.x(),
+                                frameSize.y() - (outPt.y()/outPt.w() * halfFrameSize.y()+halfFrameSize.y()));
+    }
 }
 
 // Inspired by: http://geomalgorithms.com/a01-_area.html

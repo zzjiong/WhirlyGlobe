@@ -206,10 +206,10 @@ public:
     
     /// Center of the object in world coordinates
     void setWorldLoc(const Point3d &worldLoc);
-    Point3d getWorldLoc();
-    Point3d getEndWorldLoc();
-    TimeInterval getStartTime();
-    TimeInterval getEndTime();
+    Point3d getWorldLoc() const { return worldLoc; }
+    Point3d getEndWorldLoc() const { return endWorldLoc; }
+    TimeInterval getStartTime() const { return startTime; }
+    TimeInterval getEndTime() const { return endTime; }
     
     /// Set up the end location and timing
     void setMovingLoc(const Point3d &worldLoc,TimeInterval startTime,TimeInterval endTime);
@@ -235,10 +235,11 @@ public:
     void setOrderBy(long orderBy);
     
     void addGeometry(const ConvexGeometry &geom);
+    const std::vector<ConvexGeometry> &getGeometryRef() const { return geometry; }
     std::vector<ConvexGeometry> getGeometry() const { return geometry; }
-    
+
     // Get a program ID either from the drawable state or geometry
-    SimpleIdentity getTypicalProgramID();
+    SimpleIdentity getTypicalProgramID() const;
     
 protected:
     bool enable;

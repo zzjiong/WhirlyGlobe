@@ -138,8 +138,7 @@ double PolyImportance(const Point3dVector &poly,const Point3d &norm,ViewState *v
     
     for (unsigned int offi=0;offi<viewState->viewMatrices.size();offi++)
     {
-        double origArea = PolygonArea(poly,norm);
-        origArea = std::abs(origArea);
+        const double origArea = std::abs(PolygonArea(poly,norm));
         
         Vector4dVector pts;
         pts.reserve(poly.size());
@@ -147,9 +146,9 @@ double PolyImportance(const Point3dVector &poly,const Point3d &norm,ViewState *v
         {
             const Point3d &pt = poly[ii];
             // Run through the model transform
-            Vector4d modPt = viewState->fullMatrices[offi] * Vector4d(pt.x(),pt.y(),pt.z(),1.0);
+            const Vector4d modPt = viewState->fullMatrices[offi] * Vector4d(pt.x(),pt.y(),pt.z(),1.0);
             // And then the projection matrix.  Now we're in clip space
-            Vector4d projPt = viewState->projMatrix * modPt;
+            const Vector4d projPt = viewState->projMatrix * modPt;
             pts.push_back(projPt);
         }
         
@@ -165,12 +164,11 @@ double PolyImportance(const Point3dVector &poly,const Point3d &norm,ViewState *v
         // Project to the screen
         Point2dVector screenPts;
         screenPts.reserve(clipSpacePts.size());
-        Point2d halfFrameSize(frameSize.x()/2.0,frameSize.y()/2.0);
+        const Point2d halfFrameSize(frameSize.x()/2.0,frameSize.y()/2.0);
         for (unsigned int ii=0;ii<clipSpacePts.size();ii++)
         {
-            Vector4d &outPt = clipSpacePts[ii];
-            Point2d screenPt(outPt.x()/outPt.w() * halfFrameSize.x()+halfFrameSize.x(),outPt.y()/outPt.w() * halfFrameSize.y()+halfFrameSize.y());
-            screenPts.push_back(screenPt);
+            const Vector4d &outPt = clipSpacePts[ii];
+            screenPts.emplace_back(outPt.x()/outPt.w() * halfFrameSize.x()+halfFrameSize.x(),outPt.y()/outPt.w() * halfFrameSize.y()+halfFrameSize.y());
         }
         
         double screenArea = CalcLoopArea(screenPts);
@@ -185,20 +183,19 @@ double PolyImportance(const Point3dVector &poly,const Point3d &norm,ViewState *v
         backPts.reserve(screenPts.size());
         for (unsigned int ii=0;ii<screenPts.size();ii++)
         {
-            Vector4d modelPt = viewState->invProjMatrix * clipSpacePts[ii];
-            Vector4d backPt = viewState->invFullMatrices[offi] * modelPt;
-            backPts.push_back(Point3d(backPt.x(),backPt.y(),backPt.z()));
+            const Vector4d modelPt = viewState->invProjMatrix * clipSpacePts[ii];
+            const Vector4d backPt = viewState->invFullMatrices[offi] * modelPt;
+            backPts.emplace_back(backPt.x(),backPt.y(),backPt.z());
         }
         // Then calculate the area
-        double backArea = PolygonArea(backPts,norm);
-        backArea = std::abs(backArea);
-        
+        const double backArea = std::abs(PolygonArea(backPts,norm));
+
         // Now we know how much of the original polygon made it out to the screen
         // We can scale its importance accordingly.
         // This gets rid of small slices of big tiles not getting loaded
-        double scale = (backArea == 0.0) ? 1.0 : origArea / backArea;
+        const double scale = (backArea == 0.0) ? 1.0 : origArea / backArea;
 
-        double newImport =  std::abs(screenArea) * scale;
+        const double newImport =  std::abs(screenArea) * scale;
         if (newImport > import)
             import = newImport;
     }

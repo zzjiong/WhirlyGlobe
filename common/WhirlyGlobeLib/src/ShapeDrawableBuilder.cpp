@@ -163,7 +163,7 @@ void ShapeDrawableBuilder::getChanges(WhirlyKit::ChangeSet &changes,SimpleIDSet 
     flush();
     for (unsigned int ii=0;ii<drawables.size();ii++)
     {
-        BasicDrawableBuilderRef draw = drawables[ii];
+        const auto &draw = drawables[ii];
         changes.push_back(new AddDrawableReq(draw->getDrawable()));
         drawIDs.insert(draw->getDrawableID());
     }
@@ -429,7 +429,7 @@ void ShapeDrawableBuilderTri::getChanges(ChangeSet &changeRequests,SimpleIDSet &
     flush();
     for (unsigned int ii=0;ii<drawables.size();ii++)
     {
-        BasicDrawableBuilderRef draw = drawables[ii];
+        const auto &draw = drawables[ii];
         changeRequests.push_back(new AddDrawableReq(draw->getDrawable()));
         drawIDs.insert(draw->getDrawableID());
     }

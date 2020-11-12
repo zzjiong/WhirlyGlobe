@@ -221,6 +221,7 @@ void SceneRenderer::updateWorkGroups(RendererFrameInfo *frameInfo)
 {
     // Look at drawables to move into the active set
     std::vector<DrawableRef> drawsToMoveIn;
+    drawsToMoveIn.reserve(offDrawables.size());
     for (auto &draw : offDrawables) {
         if (draw->isOn(frameInfo)) {
             bool keep = false;

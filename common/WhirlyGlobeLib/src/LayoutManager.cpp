@@ -184,13 +184,18 @@ void LayoutManager::getScreenSpaceObjects(const SelectionManager::PlacementInfo 
     std::lock_guard<std::mutex> guardLock(layoutLock);
 
     // First the regular screen space objects
-    for (LayoutEntrySet::iterator it = layoutObjects.begin();
-         it != layoutObjects.end(); ++it)
+    for (const auto &entry : layoutObjects)
     {
-        LayoutObjectEntry *entry = *it;
         if (entry->currentEnable && entry->obj.enable)
         {
-            ScreenSpaceObjectLocation ssObj;
+            if (screenSpaceObjs.empty())
+            {
+                screenSpaceObjs.reserve(layoutObjects.size() + clusters.size());
+            }
+
+            screenSpaceObjs.emplace_back();
+            auto &ssObj = screenSpaceObjs.back();
+
             ssObj.shapeIDs.push_back(entry->obj.getId());
             ssObj.dispLoc = entry->obj.worldLoc;
             ssObj.rotation = entry->obj.rotation;
@@ -198,23 +203,26 @@ void LayoutManager::getScreenSpaceObjects(const SelectionManager::PlacementInfo 
             ssObj.offset = entry->offset;
             ssObj.pts = entry->obj.selectPts;
             ssObj.mbr.addPoints(entry->obj.selectPts);
-
-            screenSpaceObjs.push_back(ssObj);
         }
     }
     
     // Then the clusters
-    for (auto &cluster : clusters)
+    for (const auto &cluster : clusters)
     {
-        ScreenSpaceObjectLocation ssObj;
+        if (screenSpaceObjs.empty())
+        {
+            screenSpaceObjs.reserve(clusters.size());
+        }
+
+        screenSpaceObjs.emplace_back();
+        auto &ssObj = screenSpaceObjs.back();
+        
         ssObj.shapeIDs = cluster.objectIDs;
         ssObj.dispLoc = cluster.layoutObj.worldLoc;
         ssObj.offset = cluster.layoutObj.offset;
         ssObj.pts = cluster.layoutObj.selectPts;
         ssObj.mbr.addPoints(cluster.layoutObj.selectPts);
         ssObj.isCluster = true;
-
-        screenSpaceObjs.push_back(ssObj);
     }
 }
     
@@ -255,14 +263,15 @@ static const int OverlapSampleY = 60;
 // Now much around the screen we'll take into account
 static const float ScreenBuffer = 0.1;
     
-bool LayoutManager::calcScreenPt(Point2f &objPt,LayoutObject *layoutObj,ViewStateRef viewState,const Mbr &screenMbr,const Point2f &frameBufferSize)
+bool LayoutManager::calcScreenPt(Point2f &objPt,const LayoutObject &layoutObj,const ViewStateRef &viewState,
+                                 const Mbr &screenMbr,const Point2f &frameBufferSize)
 {
     // Figure out where this will land
     bool isInside = false;
     for (unsigned int offi=0;offi<viewState->viewMatrices.size();offi++)
     {
-        Eigen::Matrix4d modelTrans = viewState->fullMatrices[offi];
-        Point2f thisObjPt = viewState->pointOnScreenFromDisplay(layoutObj->worldLoc,&modelTrans,frameBufferSize);
+        const Eigen::Matrix4d modelTrans = viewState->fullMatrices[offi];
+        const Point2f thisObjPt = viewState->pointOnScreenFromDisplay(layoutObj.worldLoc,&modelTrans,frameBufferSize);
         if (screenMbr.inside(Point2f(thisObjPt.x(),thisObjPt.y())))
         {
             isInside = true;
@@ -273,10 +282,13 @@ bool LayoutManager::calcScreenPt(Point2f &objPt,LayoutObject *layoutObj,ViewStat
     return isInside;
 }
 
-Matrix2d LayoutManager::calcScreenRot(float &screenRot,ViewStateRef viewState,WhirlyGlobe::GlobeViewState *globeViewState,ScreenSpaceObject *ssObj,const Point2f &objPt,const Matrix4d &modelTrans,const Matrix4d &normalMat,const Point2f &frameBufferSize)
+// TODO: this is nearly identical to SelectionManager::calcScreenRot, see if we can reduce the duplication
+Matrix2d LayoutManager::calcScreenRot(float &screenRot,const ViewStateRef &viewState, const WhirlyGlobe::GlobeViewState *globeViewState,
+                                      const ScreenSpaceObject &ssObj,const Point2f &objPt,const Matrix4d &modelTrans,
+                                      const Matrix4d &normalMat,const Point2f &frameBufferSize)
 {
     // Switch from counter-clockwise to clockwise
-    double rot = 2*M_PI-ssObj->rotation;
+    const double rot = 2*M_PI-ssObj.rotation;
     
     Point3d upVec,northVec,eastVec;
     if (!globeViewState)
@@ -285,7 +297,7 @@ Matrix2d LayoutManager::calcScreenRot(float &screenRot,ViewStateRef viewState,Wh
         northVec = Point3d(0,1,0);
         eastVec = Point3d(1,0,0);
     } else {
-        Point3d worldLoc = ssObj->getWorldLoc();
+        const Point3d worldLoc = ssObj.getWorldLoc();
         upVec = worldLoc.normalized();
         // Vector pointing north
         northVec = Point3d(-worldLoc.x(),-worldLoc.y(),1.0-worldLoc.z());
@@ -294,20 +306,19 @@ Matrix2d LayoutManager::calcScreenRot(float &screenRot,ViewStateRef viewState,Wh
     }
     
     // This vector represents the rotation in world space
-    Point3d rotVec = eastVec * sin(rot) + northVec * cos(rot);
+    const Point3d rotVec = eastVec * sin(rot) + northVec * cos(rot);
     
     // Project down into screen space
-    Vector4d projRot = normalMat * Vector4d(rotVec.x(),rotVec.y(),rotVec.z(),0.0);
+    const Vector4d projRot = normalMat * Vector4d(rotVec.x(),rotVec.y(),rotVec.z(),0.0);
     
     // Use the resulting x & y
     screenRot = atan2(projRot.y(),projRot.x())-M_PI/2.0;
     // Keep the labels upright
-    if (ssObj->keepUpright)
-        if (screenRot > M_PI/2 && screenRot < 3*M_PI/2)
-            screenRot = screenRot + M_PI;
+    if (ssObj.keepUpright && screenRot > M_PI/2 && screenRot < 3*M_PI/2)
+        screenRot = screenRot + M_PI;
+
     Matrix2d screenRotMat;
     screenRotMat = Eigen::Rotation2Dd(screenRot);
-    
     return screenRotMat;
 }
 
@@ -465,14 +476,12 @@ bool LayoutManager::runLayoutRules(ViewStateRef viewState,std::vector<ClusterEnt
             ClusterHelper clusterHelper(screenMbr,OverlapSampleX,OverlapSampleY,resScale,params.clusterSize);
             
             // Add all the various objects to the cluster and figure out overlaps
-            for (LayoutSortingSet::iterator sit = cluster->layoutObjects.begin(); sit != cluster->layoutObjects.end(); ++sit)
+            for (const auto &entry : cluster->layoutObjects)
             {
-                LayoutObjectEntry *entry = *sit;
-                
                 // Project the point and figure out the rotation
                 bool isActive = true;
                 Point2f objPt;
-                bool isInside = calcScreenPt(objPt,&entry->obj,viewState,screenMbr,frameBufferSize);
+                const bool isInside = calcScreenPt(objPt,entry->obj,viewState,screenMbr,frameBufferSize);
                 
                 isActive &= isInside;
                 
@@ -482,7 +491,7 @@ bool LayoutManager::runLayoutRules(ViewStateRef viewState,std::vector<ClusterEnt
                     float screenRot = 0.0;
                     Matrix2d screenRotMat;
                     if (entry->obj.rotation != 0.0)
-                        screenRotMat = calcScreenRot(screenRot,viewState,globeViewState,&entry->obj,objPt,modelTrans,normalMat,frameBufferSize);
+                        screenRotMat = calcScreenRot(screenRot,viewState,globeViewState,entry->obj,objPt,modelTrans,normalMat,frameBufferSize);
                     
                     // Rotate the rectangle
                     Point2dVector objPts(4);
@@ -494,8 +503,8 @@ bool LayoutManager::runLayoutRules(ViewStateRef viewState,std::vector<ClusterEnt
                         Point2d center(objPt.x(),objPt.y());
                         for (unsigned int ii=0;ii<4;ii++)
                         {
-                            Point2d thisObjPt = entry->obj.layoutPts[ii];
-                            Point2d offPt = screenRotMat * Point2d(thisObjPt.x()*resScale,thisObjPt.y()*resScale);
+                            const Point2d thisObjPt = entry->obj.layoutPts[ii];
+                            const Point2d offPt = screenRotMat * Point2d(thisObjPt.x()*resScale,thisObjPt.y()*resScale);
                             objPts[ii] = Point2d(offPt.x(),-offPt.y()) + center;
                         }
                     }
@@ -512,7 +521,7 @@ bool LayoutManager::runLayoutRules(ViewStateRef viewState,std::vector<ClusterEnt
             for (auto obj : clusterHelper.simpleObjects)
                 if (obj.parentObject < 0)
                 {
-                    layoutObjs.push_back(LayoutObjectContainer(obj.objEntry));
+                    layoutObjs.emplace_back(obj.objEntry);
                     obj.objEntry->newEnable = true;
                     obj.objEntry->newCluster = -1;
                 }
@@ -525,7 +534,7 @@ bool LayoutManager::runLayoutRules(ViewStateRef viewState,std::vector<ClusterEnt
                 
                 if (!objsForCluster.empty())
                 {
-                    int clusterEntryID = (int)clusterEntries.size();
+                    const int clusterEntryID = (int)clusterEntries.size();
                     clusterEntries.resize(clusterEntryID+1);
                     ClusterEntry &clusterEntry = clusterEntries[clusterEntryID];
 
@@ -543,6 +552,7 @@ bool LayoutManager::runLayoutRules(ViewStateRef viewState,std::vector<ClusterEnt
                     if (dispPtValid)
                     {
                         clusterEntry.layoutObj.worldLoc = dispPt;
+                        clusterEntry.objectIDs.reserve(clusterEntry.objectIDs.size() + objsForCluster.size());
                         for (auto thisObj : objsForCluster)
                             clusterEntry.objectIDs.push_back(thisObj->obj.getId());
                         clusterGen->makeLayoutObject(cluster->clusterID, objsForCluster, clusterEntry.layoutObj);
@@ -575,8 +585,8 @@ bool LayoutManager::runLayoutRules(ViewStateRef viewState,std::vector<ClusterEnt
         }
         
         // Tear down the clusters
-        for (ClusteredObjectsSet::iterator it = clusterObjs.begin(); it != clusterObjs.end(); ++it)
-            delete *it;
+        for (auto obj : clusterObjs)
+            delete obj;
         clusterObjs.clear();
         
         clusterGen->endLayoutObjects();
@@ -588,16 +598,17 @@ bool LayoutManager::runLayoutRules(ViewStateRef viewState,std::vector<ClusterEnt
     OverlapHelper overlapMan(screenMbr,OverlapSampleX,OverlapSampleY);
     
     // Add in the unique objects, cluster entries and then sort them all
+    layoutObjs.reserve(layoutObjs.size() + uniqueLayoutObjs.size());
     for (auto it : uniqueLayoutObjs) {
         layoutObjs.push_back(it.second);
     }
     std::sort(layoutObjs.begin(),layoutObjs.end());
     
     // Clusters have priority in the overlap.
-    for (auto it : clusterEntries) {
+    for (auto /*?*/ it : clusterEntries) {
         Point2f objPt = {0,0};
-        /*const bool isInside = */calcScreenPt(objPt,&it.layoutObj,viewState,screenMbr,frameBufferSize);
-        auto objPts = it.layoutObj.layoutPts;
+        /*const bool isInside = */calcScreenPt(objPt,it.layoutObj,viewState,screenMbr,frameBufferSize);
+        auto objPts = it.layoutObj.layoutPts;   // todo: clarify if a copy or reference is desired
         for (auto &pt : objPts)
             pt = pt * resScale + Point2d(objPt.x(),objPt.y());
         overlapMan.addObject(objPts);
@@ -635,13 +646,13 @@ bool LayoutManager::runLayoutRules(ViewStateRef viewState,std::vector<ClusterEnt
             if (isActive)
             {
                 Point2f objPt;
-                bool isInside = calcScreenPt(objPt,&layoutObj->obj,viewState,screenMbr,frameBufferSize);
+                bool isInside = calcScreenPt(objPt,layoutObj->obj,viewState,screenMbr,frameBufferSize);
                 
                 isActive &= isInside;
                 
                 // Deal with the rotation
                 if (layoutObj->obj.rotation != 0.0)
-                    screenRotMat = calcScreenRot(screenRot,viewState,globeViewState,&layoutObj->obj,objPt,modelTrans,normalMat,frameBufferSize);
+                    screenRotMat = calcScreenRot(screenRot,viewState,globeViewState,layoutObj->obj,objPt,modelTrans,normalMat,frameBufferSize);
                 
                 // Now for the overlap checks
                 if (isActive)
@@ -699,7 +710,7 @@ bool LayoutManager::runLayoutRules(ViewStateRef viewState,std::vector<ClusterEnt
                                 objPts[2] = objPts[0] + Point2d(layoutSpan.x()*resScale,-layoutSpan.y()*resScale);
                                 objPts[3] = objPts[0] + Point2d(0.0,-layoutSpan.y()*resScale);
                             } else {
-                                Point2d center(objPt.x(),objPt.y());
+                                const Point2d center(objPt.x(),objPt.y());
                                 objPts[0] = Point2d(objOffset.x(),-objOffset.y()) + layoutOrg;
                                 objPts[1] = Point2d(objOffset.x(),-objOffset.y()) + layoutOrg + Point2d(layoutSpan.x(),0.0);
                                 objPts[2] = Point2d(objOffset.x(),-objOffset.y()) + layoutOrg + Point2d(layoutSpan.x(),-layoutSpan.y());
@@ -707,7 +718,7 @@ bool LayoutManager::runLayoutRules(ViewStateRef viewState,std::vector<ClusterEnt
                                 for (unsigned int oi=0;oi<4;oi++)
                                 {
                                     Point2d &thisObjPt = objPts[oi];
-                                    Point2d offPt = screenRotMat * Point2d(thisObjPt.x()*resScale,thisObjPt.y()*resScale);
+                                    const Point2d offPt = screenRotMat * Point2d(thisObjPt.x()*resScale,thisObjPt.y()*resScale);
                                     thisObjPt = Point2d(offPt.x(),-offPt.y()) + center;
                                 }
                             }
