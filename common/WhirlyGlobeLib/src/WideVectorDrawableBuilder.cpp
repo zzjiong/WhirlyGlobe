@@ -47,12 +47,14 @@ void WideVectorDrawableBuilder::Init(unsigned int numVert,unsigned int numTri,bo
     tris.reserve(numTri);
     
     lineWidth = 10.0/1024.0;
+    lineOffset = 0.0;
     if (globeMode)
         basicDraw->normalEntry = addAttribute(BDFloat3Type, a_normalNameID,numVert);
     basicDraw->colorEntry = addAttribute(BDChar4Type, a_colorNameID);
     p1_index = addAttribute(BDFloat3Type, StringIndexer::getStringID("a_p1"),numVert);
     tex_index = addAttribute(BDFloat4Type, StringIndexer::getStringID("a_texinfo"),numVert);
     n0_index = addAttribute(BDFloat3Type, StringIndexer::getStringID("a_n0"),numVert);
+    offset_index = addAttribute(BDFloat3Type, StringIndexer::getStringID("a_offset"),numVert);
     c0_index = addAttribute(BDFloatType, StringIndexer::getStringID("a_c0"),numVert);
 }
     
@@ -64,6 +66,11 @@ void WideVectorDrawableBuilder::setColor(RGBAColor inColor)
 void WideVectorDrawableBuilder::setLineWidth(float inWidth)
 {
     lineWidth = inWidth;
+}
+
+void WideVectorDrawableBuilder::setLineOffset(float inOffset)
+{
+    lineOffset = inOffset;
 }
  
 void WideVectorDrawableBuilder::setTexRepeat(float inTexRepeat)
@@ -123,6 +130,11 @@ void WideVectorDrawableBuilder::add_n0(const Point3f &dir)
 #endif
 }
 
+void WideVectorDrawableBuilder::add_offset(const Point3f &offset)
+{
+    addAttributeValue(offset_index, offset);
+}
+
 void WideVectorDrawableBuilder::add_c0(float val)
 {
     addAttributeValue(c0_index, val);
@@ -134,6 +146,11 @@ void WideVectorDrawableBuilder::add_c0(float val)
 void WideVectorDrawableBuilder::setWidthExpression(FloatExpressionInfoRef inWidthExp)
 {
     widthExp = inWidthExp;
+}
+
+void WideVectorDrawableBuilder::setOffsetExpression(FloatExpressionInfoRef inOffsetExp)
+{
+    offsetExp = inOffsetExp;
 }
 
 void WideVectorDrawableBuilder::setupTweaker(BasicDrawable *theDraw)

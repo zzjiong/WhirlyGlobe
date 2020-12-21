@@ -61,7 +61,7 @@ lineHeight(that.lineHeight), fontPointSize(that.fontPointSize)
 }
 
 LabelInfo::LabelInfo(const Dictionary &dict, bool screenObject)
-: screenObject(screenObject), fontPointSize(16.0)
+: BaseInfo(dict), screenObject(screenObject), fontPointSize(16.0)
 {
     hasTextColor = dict.hasField(MaplyTextColor);
     textColor = dict.getColor(MaplyTextColor, RGBAColor(255,255,255,255));
@@ -106,7 +106,7 @@ LabelSceneRep::LabelSceneRep()
 // Don't want to give them their own separate drawable, obviously
 typedef std::map<SimpleIdentity,BasicDrawable *> IconDrawables;
 
-LabelRenderer::LabelRenderer(Scene *scene,FontTextureManager *fontTexManager,const LabelInfo *labelInfo)
+LabelRenderer::LabelRenderer(Scene *scene,FontTextureManagerRef &fontTexManager,const LabelInfo *labelInfo)
     : useAttributedString(true), scene(scene), fontTexManager(fontTexManager), labelInfo(labelInfo),
     textureAtlasSize(2048), labelRep(NULL)
 {

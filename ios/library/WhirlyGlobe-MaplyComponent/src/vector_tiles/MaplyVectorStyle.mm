@@ -461,6 +461,11 @@ LabelInfoRef MapboxVectorStyleSetImpl_iOS::makeLabelInfo(PlatformThreadInfo *ins
                     if (!font) {
                         font = [UIFont fontWithName:[NSString stringWithFormat:@"%@-%@%@",[components objectAtIndex:0],[components objectAtIndex:1],[components objectAtIndex:2]] size:fontSize];
                     }
+                    
+                    // And try an even stupider construction
+                    if (!font) {
+                        font = [UIFont fontWithName:[NSString stringWithFormat:@"%@-%@_%@-%@",[components objectAtIndex:0],[components objectAtIndex:2],[components objectAtIndex:1],[components objectAtIndex:2]] size:fontSize];
+                    }
                 }
                     break;
                 default:
@@ -512,7 +517,7 @@ void MapboxVectorStyleSetImpl_iOS::addSelectionObject(SimpleIdentity selectID,Ve
     if (!compManage)
         return;
     
-    ComponentManager_iOS *compManage_iOS = (ComponentManager_iOS *)compManage;
+    ComponentManager_iOSRef compManage_iOS = std::dynamic_pointer_cast<ComponentManager_iOS>(compManage);
     
     MaplyVectorObject *vectorObj = [[MaplyVectorObject alloc] initWithRef:vecObj];
     compManage_iOS->addSelectObject(selectID, vectorObj);

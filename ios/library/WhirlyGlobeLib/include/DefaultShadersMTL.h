@@ -63,7 +63,8 @@ typedef enum {
     WKSVertexWideVecTexInfoAttribute = 5,
     WKSVertexWideVecP1Attribute,
     WKSVertexWideVecN0Attribute,
-    WKSVertexWideVecC0Attribute
+    WKSVertexWideVecC0Attribute,
+    WKSVertexWideVecOffsetAttribute
 } WKSVertexWideVecAttributes;
     
 // Screen space vertex attribute positions
@@ -220,6 +221,7 @@ struct Lighting {
 // Instructions to the wide vector shaders, usually per-drawable
 struct UniformWideVec {
     float w2;       // Width / 2.0 in screen space
+    float offset;   // Offset from center in screen space
     float edge;     // Edge falloff control
     float texRepeat;  // Texture scaling specific to wide vectors
     simd::float4 color;  // Color override.  TODO: Use the standard one.  Seriously.
@@ -229,6 +231,7 @@ struct UniformWideVec {
 // For variable width (and color, etc) lines we'll
 struct UniformWideVecExp {
     FloatExp widthExp;
+    FloatExp offsetExp;
     FloatExp opacityExp;
     ColorExp colorExp;
 };
@@ -346,6 +349,7 @@ struct VertexTriWideVec
     float4 texInfo [[attribute(WhirlyKitShader::WKSVertexWideVecTexInfoAttribute)]];
     float3 p1 [[attribute(WhirlyKitShader::WKSVertexWideVecP1Attribute)]];
     float3 n0 [[attribute(WhirlyKitShader::WKSVertexWideVecN0Attribute)]];
+    float3 offset [[attribute(WhirlyKitShader::WKSVertexWideVecOffsetAttribute)]];
     float c0 [[attribute(WhirlyKitShader::WKSVertexWideVecC0Attribute)]];
 };
 
@@ -382,11 +386,11 @@ struct VertexTriBillboard
 
 typedef struct RegularTextures {
     // A bit per texture that's present
-    int texPresent                          [[ id(WKSTexBufTexPresent) ]];
+    uint32_t texPresent                          [[ id(WKSTexBufTexPresent) ]];
     // Texture indirection (for accessing sub-textures)
-    float offset                            [[ id(WKSTexBuffIndirectOffset) ]] [2*WKSTextureMax];
-    float scale                             [[ id(WKSTexBuffIndirectScale) ]] [2*WKSTextureMax];
-    metal::texture2d<float, metal::access::sample> tex    [[ id(WKSTexBuffTextures) ]] [WKSTextureMax];
+    metal::array<float, 2*WKSTextureMax> offset     [[ id(WKSTexBuffIndirectOffset) ]];
+    metal::array<float, 2*WKSTextureMax> scale      [[ id(WKSTexBuffIndirectScale) ]];
+    metal::array<metal::texture2d<float, metal::access::sample>, WKSTextureMax> tex    [[ id(WKSTexBuffTextures) ]];
 } RegularTextures;
 
 struct VertexTriArgBufferA {

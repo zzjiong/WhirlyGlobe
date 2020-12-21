@@ -44,6 +44,7 @@ void WideVectorDrawableBuilderMTL::Init(unsigned int numVert, unsigned int numTr
     ((VertexAttributeMTL *)basicDraw->vertexAttributes[p1_index])->slot = WhirlyKitShader::WKSVertexWideVecP1Attribute;
     ((VertexAttributeMTL *)basicDraw->vertexAttributes[tex_index])->slot = WhirlyKitShader::WKSVertexWideVecTexInfoAttribute;
     ((VertexAttributeMTL *)basicDraw->vertexAttributes[n0_index])->slot = WhirlyKitShader::WKSVertexWideVecN0Attribute;
+    ((VertexAttributeMTL *)basicDraw->vertexAttributes[offset_index])->slot = WhirlyKitShader::WKSVertexWideVecOffsetAttribute;
     ((VertexAttributeMTL *)basicDraw->vertexAttributes[c0_index])->slot = WhirlyKitShader::WKSVertexWideVecC0Attribute;
 }
 
@@ -63,13 +64,14 @@ BasicDrawableRef WideVectorDrawableBuilderMTL::getDrawable()
     WhirlyKitShader::UniformWideVec uniWV;
     memset(&uniWV,0,sizeof(uniWV));
     uniWV.w2 = lineWidth/2.0;
+    uniWV.offset = lineOffset;
     uniWV.edge = edgeSize;
     uniWV.texRepeat = texRepeat;
     uniWV.color[0] = color.r/255.0;
     uniWV.color[1] = color.g/255.0;
     uniWV.color[2] = color.b/255.0;
     uniWV.color[3] = color.a/255.0;
-    uniWV.hasExp = widthExp || colorExp || opacityExp || includeExp;
+    uniWV.hasExp = widthExp || offsetExp || colorExp || opacityExp || includeExp;
 
     BasicDrawable::UniformBlock uniBlock;
     uniBlock.blockData = RawDataRef(new RawNSDataReader([[NSData alloc] initWithBytes:&uniWV length:sizeof(uniWV)]));
@@ -82,6 +84,8 @@ BasicDrawableRef WideVectorDrawableBuilderMTL::getDrawable()
         memset(&wideVecExp, 0, sizeof(wideVecExp));
         if (widthExp)
             FloatExpressionToMtl(widthExp,wideVecExp.widthExp);
+        if (offsetExp)
+            FloatExpressionToMtl(offsetExp,wideVecExp.offsetExp);
         if (opacityExp)
             FloatExpressionToMtl(opacityExp,wideVecExp.opacityExp);
         if (colorExp)

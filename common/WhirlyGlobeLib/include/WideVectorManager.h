@@ -52,6 +52,7 @@ public:
 
     RGBAColor color;
     float width;
+    float offset;
     float repeatSize;
     float edgeSize;
     float subdivEps;
@@ -62,6 +63,7 @@ public:
     float miterLimit;
     
     FloatExpressionInfoRef widthExp;
+    FloatExpressionInfoRef offsetExp;
     FloatExpressionInfoRef opacityExp;
     ColorExpressionInfoRef colorExp;
 };
@@ -110,8 +112,8 @@ public:
     void removeVectors(SimpleIDSet &vecIDs,ChangeSet &changes);
     
 protected:
-    std::mutex vecLock;
     WideVectorSceneRepSet sceneReps;
 };
+typedef std::shared_ptr<WideVectorManager> WideVectorManagerRef;
     
 }
