@@ -13,6 +13,9 @@ class StartupViewController: UITableViewController, UIPopoverPresentationControl
 	let tests = [
         StamenWatercolorRemote(),
 		GeographyClassTestCase(),
+        GlyphProblemTestCase(),
+        CrashProblem(),
+        MbtilesLoadTestCase(),
         NASAGIBSTestCase(),
 		AnimatedBasemapTestCase(),
         ImageReloadTestCase(),

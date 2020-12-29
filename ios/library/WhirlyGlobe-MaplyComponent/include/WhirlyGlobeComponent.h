@@ -19,5 +19,8 @@
  */
 
 #import "MaplyComponent.h"
+//#import "MaplyGlobeRenderController.h"
+//#import "WhirlyGlobeViewController.h"
+
 #import "control/MaplyGlobeRenderController.h"
 #import "control/WhirlyGlobeViewController.h"

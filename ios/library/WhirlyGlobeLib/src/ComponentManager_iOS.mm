@@ -87,7 +87,11 @@ void ComponentManager_iOS::removeComponentObjects(PlatformThreadInfo *threadInfo
         
         for (auto compID: compIDs) {
             auto it = compObjs.find(compID);
-            selectIDs.insert(it->second->selectIDs.begin(),it->second->selectIDs.end());
+            //**20201225 --周炯 修改
+            if ((it->second != NULL)){
+                selectIDs.insert(it->second->selectIDs.begin(),it->second->selectIDs.end());
+            }
+//            selectIDs.insert(it->second->selectIDs.begin(),it->second->selectIDs.end());
         }
         
         removeSelectObjects(selectIDs);

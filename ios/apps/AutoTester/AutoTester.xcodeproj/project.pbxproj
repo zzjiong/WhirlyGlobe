@@ -507,6 +507,10 @@
 		8F981DB91DE3577C00717DF1 /* ne_10m_roads.prj in Resources */ = {isa = PBXBuildFile; fileRef = 8F981DB31DE3577C00717DF1 /* ne_10m_roads.prj */; };
 		8F981DBB1DE3577C00717DF1 /* ne_10m_roads.shp in Resources */ = {isa = PBXBuildFile; fileRef = 8F981DB51DE3577C00717DF1 /* ne_10m_roads.shp */; };
 		8F981DBC1DE3577C00717DF1 /* ne_10m_roads.shx in Resources */ = {isa = PBXBuildFile; fileRef = 8F981DB61DE3577C00717DF1 /* ne_10m_roads.shx */; };
+		A69F631D25934DA1000CFDAC /* MbtilesLoadTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = A69F631C25934DA1000CFDAC /* MbtilesLoadTestCase.m */; };
+		A6A121B225942DA700AE0632 /* CrashProblem.m in Sources */ = {isa = PBXBuildFile; fileRef = A6A121B125942DA700AE0632 /* CrashProblem.m */; };
+		A6A121B92594A42D00AE0632 /* world9.mbtiles in Resources */ = {isa = PBXBuildFile; fileRef = A6A121B82594A42D00AE0632 /* world9.mbtiles */; };
+		A6B4148B259577F2000D883E /* gjx.png in Resources */ = {isa = PBXBuildFile; fileRef = A6B41489259577F2000D883E /* gjx.png */; };
 		D8200C911BE92B2F00B22CF5 /* WideVectorsTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = D8200C901BE92B2F00B22CF5 /* WideVectorsTestCase.m */; };
 		D8200C9F1BE9516300B22CF5 /* ShapesTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = D8200C9E1BE9516300B22CF5 /* ShapesTestCase.m */; };
 		D8200CA11BE9563F00B22CF5 /* StickersTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8200CA01BE9563F00B22CF5 /* StickersTestCase.swift */; };
@@ -1106,6 +1110,12 @@
 		8F981DB51DE3577C00717DF1 /* ne_10m_roads.shp */ = {isa = PBXFileReference; lastKnownFileType = file; name = ne_10m_roads.shp; path = ../../../resources/vectors/ne_10m_roads/ne_10m_roads.shp; sourceTree = "<group>"; };
 		8F981DB61DE3577C00717DF1 /* ne_10m_roads.shx */ = {isa = PBXFileReference; lastKnownFileType = file; name = ne_10m_roads.shx; path = ../../../resources/vectors/ne_10m_roads/ne_10m_roads.shx; sourceTree = "<group>"; };
 		8FE129181CDFB3B8004744FC /* TestCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestCell.swift; sourceTree = "<group>"; };
+		A69F631B25934DA1000CFDAC /* MbtilesLoadTestCase.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MbtilesLoadTestCase.h; sourceTree = "<group>"; };
+		A69F631C25934DA1000CFDAC /* MbtilesLoadTestCase.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MbtilesLoadTestCase.m; sourceTree = "<group>"; };
+		A6A121B025942DA700AE0632 /* CrashProblem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CrashProblem.h; sourceTree = "<group>"; };
+		A6A121B125942DA700AE0632 /* CrashProblem.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CrashProblem.m; sourceTree = "<group>"; };
+		A6A121B82594A42D00AE0632 /* world9.mbtiles */ = {isa = PBXFileReference; lastKnownFileType = file; name = world9.mbtiles; path = resources/world9.mbtiles; sourceTree = "<group>"; };
+		A6B41489259577F2000D883E /* gjx.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = gjx.png; path = resources/gjx.png; sourceTree = "<group>"; };
 		D8200C8F1BE92B2F00B22CF5 /* WideVectorsTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WideVectorsTestCase.h; sourceTree = "<group>"; };
 		D8200C901BE92B2F00B22CF5 /* WideVectorsTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WideVectorsTestCase.m; sourceTree = "<group>"; };
 		D8200C971BE93E6E00B22CF5 /* StarsSunTestCase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = StarsSunTestCase.swift; sourceTree = "<group>"; };
@@ -1285,6 +1295,10 @@
 				2B29944C243BA16000677DE4 /* SimpleStyleTestCase.swift */,
 				2B4B30A72395E0DE00854073 /* GlyphProblemTestCase.h */,
 				2B4B30A62395E0DE00854073 /* GlyphProblemTestCase.m */,
+				A6A121B025942DA700AE0632 /* CrashProblem.h */,
+				A6A121B125942DA700AE0632 /* CrashProblem.m */,
+				A69F631B25934DA1000CFDAC /* MbtilesLoadTestCase.h */,
+				A69F631C25934DA1000CFDAC /* MbtilesLoadTestCase.m */,
 				2B4B30A82395E0DE00854073 /* LayerStartupShutdownTestCase.swift */,
 				2B4B30A32395E0DE00854073 /* MapboxTestCase.swift */,
 				2B4B30A92395E0DE00854073 /* MapTilerTestCase.swift */,
@@ -1419,6 +1433,8 @@
 		88FF5BDF1BC31D3C002F15CE /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				A6B41489259577F2000D883E /* gjx.png */,
+				A6A121B82594A42D00AE0632 /* world9.mbtiles */,
 				2BD914E7256F1F8A00E724A8 /* Assets.xcassets */,
 				2BD914BC256F1C8D00E724A8 /* icon_152.png */,
 				2BD914BB256F1C8D00E724A8 /* icon_167.png */,
@@ -1982,7 +1998,7 @@
 				TargetAttributes = {
 					88E4B8BE1B83B6AB0050D21B = {
 						CreatedOnToolsVersion = 6.4;
-						DevelopmentTeam = BFXSGS6V8N;
+						DevelopmentTeam = V762XE89AY;
 						LastSwiftMigration = 0930;
 						ProvisioningStyle = Automatic;
 					};
@@ -2239,8 +2255,10 @@
 				88FF5E5E1BC31D95002F15CE /* IOT.geojson in Resources */,
 				88FF5C841BC31D6D002F15CE /* america-football-24@2x.png in Resources */,
 				88FF5E891BC31D95002F15CE /* MNE.geojson in Resources */,
+				A6A121B92594A42D00AE0632 /* world9.mbtiles in Resources */,
 				88FF5E201BC31D95002F15CE /* CHN.geojson in Resources */,
 				88FF5C8F1BC31D6D002F15CE /* cafe-24@2x.png in Resources */,
+				A6B4148B259577F2000D883E /* gjx.png in Resources */,
 				88FF5E131BC31D95002F15CE /* BMU.geojson in Resources */,
 				88FF5CE51BC31D6D002F15CE /* village-24@2x.png in Resources */,
 				88FF5BE71BC31D53002F15CE /* map_pin.png in Resources */,
@@ -2558,8 +2576,10 @@
 				2B68A43C225D06A8009CC720 /* ImageReloadTestCase.swift in Sources */,
 				D8F2FE2E1BE7CF310058A310 /* ModelsTestCase.swift in Sources */,
 				2B81009C221F4EA900CFF779 /* CartoDBInterpreter.m in Sources */,
+				A6A121B225942DA700AE0632 /* CrashProblem.m in Sources */,
 				2B29944B243BA08D00677DE4 /* MapboxKindaMap.swift in Sources */,
 				D8228AA81BE786BE001D6914 /* ClusteredMarkersTestCase.swift in Sources */,
+				A69F631D25934DA1000CFDAC /* MbtilesLoadTestCase.m in Sources */,
 				2B4B63AE23611D690008C8C1 /* OfflineRenderTestCase.swift in Sources */,
 				2BC2DCCD1D1F4CE20088D350 /* ShapefileTestCase.m in Sources */,
 				D8F2FE271BE7BD630058A310 /* LabelsTestCase.m in Sources */,
@@ -2734,7 +2754,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 3;
-				DEVELOPMENT_TEAM = BFXSGS6V8N;
+				DEVELOPMENT_TEAM = V762XE89AY;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
@@ -2749,7 +2769,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MARKETING_VERSION = 3.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.mousebirdconsulting.AutoTesterApp;
+				PRODUCT_BUNDLE_IDENTIFIER = AutoTesterApp;
 				PRODUCT_NAME = AutoTester;
 				PROVISIONING_PROFILE = "";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -2768,7 +2788,7 @@
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 3;
-				DEVELOPMENT_TEAM = BFXSGS6V8N;
+				DEVELOPMENT_TEAM = V762XE89AY;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
@@ -2783,7 +2803,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MARKETING_VERSION = 3.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.mousebirdconsulting.AutoTesterApp;
+				PRODUCT_BUNDLE_IDENTIFIER = AutoTesterApp;
 				PRODUCT_NAME = AutoTester;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/AutoTester/MaplyTesterBridge.h";

@@ -208,6 +208,8 @@ static const float MomentumAnimLen = 1.0;
             gestureRecognizer.enabled = true;
         }
         return;
+    }else if([pan numberOfTouches] == 1){//**修改 20181126--周炯
+        runEndMomentum = false;
     }
 	    
 	switch (pan.state)
