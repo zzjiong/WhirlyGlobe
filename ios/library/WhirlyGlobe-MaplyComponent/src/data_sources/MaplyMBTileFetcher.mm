@@ -185,6 +185,12 @@ using namespace WhirlyKit;
         }
     }
     
+    //**修改 20210105--周炯
+    if(self.darkMode){
+        UIImage *image = [UIImage imageWithData:imageData];
+        UIImage *resImg = [self imageBlackToTransparent:image];
+        imageData = UIImageJPEGRepresentation(resImg,1.0f);
+    }
     return imageData;
 }
 
@@ -196,6 +202,69 @@ using namespace WhirlyKit;
         sqlite3_close(sqlDb);
         sqlDb = nullptr;
     }
+}
+
+void ProviderReleaseData (void *info, const void *data, size_t size)
+{
+    free((void*)data);
+}
+
+- (UIImage*) imageBlackToTransparent:(UIImage*) image{
+    // 分配内存c
+    const int imageWidth = image.size.width;
+    const int imageHeight = image.size.height;
+    size_t      bytesPerRow = imageWidth * 4;
+    uint32_t* rgbImageBuf = (uint32_t*)malloc(bytesPerRow * imageHeight);
+    
+    // 创建context
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGContextRef context = CGBitmapContextCreate(rgbImageBuf, imageWidth, imageHeight, 8, bytesPerRow, colorSpace,
+                                                 kCGBitmapByteOrder32Little | kCGImageAlphaNoneSkipLast);
+    CGContextDrawImage(context, CGRectMake(0, 0, imageWidth, imageHeight), image.CGImage);
+    
+    // 遍历像素
+    int pixelNum = imageWidth * imageHeight;
+    uint32_t* pCurPtr = rgbImageBuf;
+    for (int i = 0; i < pixelNum; i++, pCurPtr++)
+    {
+        // 改成下面的代码，会将图片转成灰度
+        uint8_t* ptr = (uint8_t*)pCurPtr;
+        
+        UInt8 red,green,blue;
+        red= ptr[3];
+        green =   ptr[2] ;
+        blue= ptr[1] ;
+        
+        if(red > 240){
+            ptr[3] = 31;
+            ptr[2] = 31;
+            ptr[1] = 31;
+        }else{
+            ptr[3] = 15;
+            ptr[2] = 28;
+            ptr[1] = 73;
+        }
+        //        ptr[3] = 255 - red;
+        //        ptr[2] = 255 - green;
+        //        ptr[1] = 255 - blue;
+    }
+    
+    // 将内存转成image
+    CGDataProviderRef dataProvider = CGDataProviderCreateWithData(NULL, rgbImageBuf, bytesPerRow * imageHeight, ProviderReleaseData);
+    CGImageRef imageRef = CGImageCreate(imageWidth, imageHeight, 8, 32, bytesPerRow, colorSpace,
+                                        kCGImageAlphaLast | kCGBitmapByteOrder32Little, dataProvider,
+                                        NULL, true, kCGRenderingIntentDefault);
+    CGDataProviderRelease(dataProvider);
+    
+    UIImage* resultUIImage = [UIImage imageWithCGImage:imageRef];
+    
+    // 释放
+    CGImageRelease(imageRef);
+    CGContextRelease(context);
+    CGColorSpaceRelease(colorSpace);
+    // free(rgbImageBuf) 创建dataProvider时已提供释放函数，这里不用free
+    
+    return resultUIImage;    
 }
 
 @end

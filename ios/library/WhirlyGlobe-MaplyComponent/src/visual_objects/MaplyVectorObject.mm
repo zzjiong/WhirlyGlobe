@@ -298,6 +298,9 @@ using namespace WhirlyGlobe;
 {
 	if (![[NSFileManager defaultManager] fileExistsAtPath:[NSString stringWithFormat:@"%@.shp",fileName]]) {
 		fileName = [[NSBundle mainBundle] pathForResource:fileName ofType:@"shp"];
+        //**20190130 --周炯 添加
+        if (![[NSFileManager defaultManager] fileExistsAtPath:fileName])
+            return nil;
 	}
 	if (!fileName)
 		return nil;

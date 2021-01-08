@@ -37,6 +37,5 @@
 #import "GlyphProblemTestCase.h"
 #import "MbtilesLoadTestCase.h"
 #import "CrashProblem.h"
-#import "ChangeVectorsTestCase.h"
 
 #endif

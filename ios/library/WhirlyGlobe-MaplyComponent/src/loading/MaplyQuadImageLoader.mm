@@ -133,6 +133,9 @@ using namespace WhirlyKit;
 
 - (void)dataForTile:(MaplyImageLoaderReturn *)loadReturn loader:(MaplyQuadLoaderBase *)loader
 {
+    if(loadReturn.isCancelled){
+        return;
+    }
     if (const auto __strong vc = loadReturn->viewC) {
         NSArray *tileDatas = [loadReturn getTileData];
         

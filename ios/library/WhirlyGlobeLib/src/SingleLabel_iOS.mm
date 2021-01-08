@@ -29,6 +29,7 @@ LabelInfo_iOS::LabelInfo_iOS(NSDictionary *iosDict,const Dictionary &dict,bool s
 {
     font = [iosDict objectForKey:@"font"];
     fontPointSize = [font pointSize];
+    gridStyleCount = [[iosDict objectForKey:@"gridStyleCount"] integerValue];
 }
 
 LabelInfo_iOS::LabelInfo_iOS(UIFont *font,bool screenObject)
@@ -72,16 +73,20 @@ std::vector<DrawableString *> SingleLabel_iOS::generateDrawableStrings(PlatformT
             [attrStr addAttribute:kOutlineAttributeColor value:outlineColor range:NSMakeRange(0, strLen)];
             [attrStr addAttribute:NSForegroundColorAttributeName value:textColor range:NSMakeRange(0, strLen)];
         }
-        if (0) {//**修改 20201228--周炯
-            UIFont *lastFont = [UIFont fontWithName:@"Helvetica-Bold" size:labelInfo->fontPointSize / 8.0 * 5];
-            UIColor *textColor = [UIColor colorWithRed:labelInfo->textColor.r/255.0 green:labelInfo->textColor.g/255.0 blue:labelInfo->textColor.b/255.0 alpha:labelInfo->textColor.a/255.0];
-            NSDictionary *attrs = [NSDictionary dictionaryWithObjectsAndKeys:
-                                   textColor, NSForegroundColorAttributeName,
-                                   lastFont, NSFontAttributeName, nil];
-            
-            [attrStr addAttribute:NSForegroundColorAttributeName value:textColor range:NSMakeRange(0, strLen)];
-            [attrStr addAttribute:NSFontAttributeName value:labelInfo->font range:NSMakeRange(0, strLen - 1)];
-            [attrStr addAttributes:attrs range:NSMakeRange(strLen - 1, 1)];
+        
+        if (labelInfo->gridStyleCount > 0) {//**修改 20201228--周炯
+            NSInteger count = labelInfo->gridStyleCount;
+            if (strLen > count){
+                UIFont *lastFont = [UIFont fontWithName:@"Helvetica-Bold" size:labelInfo->fontPointSize / 8.0 * 5];
+                UIColor *textColor = [UIColor colorWithRed:labelInfo->textColor.r/255.0 green:labelInfo->textColor.g/255.0 blue:labelInfo->textColor.b/255.0 alpha:labelInfo->textColor.a/255.0];
+                NSDictionary *attrs = [NSDictionary dictionaryWithObjectsAndKeys:
+                                       textColor, NSForegroundColorAttributeName,
+                                       lastFont, NSFontAttributeName, nil];
+                
+                [attrStr addAttribute:NSForegroundColorAttributeName value:textColor range:NSMakeRange(0, strLen)];
+                [attrStr addAttribute:NSFontAttributeName value:labelInfo->font range:NSMakeRange(0, strLen - count)];
+                [attrStr addAttributes:attrs range:NSMakeRange(strLen - count, count)];
+            }
         }
 
         DrawableString *drawStr = fontTexManager->addString(threadInfo, attrStr, changes);

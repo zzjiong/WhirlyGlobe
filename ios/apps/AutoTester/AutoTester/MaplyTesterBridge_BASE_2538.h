@@ -35,8 +35,5 @@
 #import "ActiveObjectTestCase.h"
 #import "GeoJSONSource.h"
 #import "GlyphProblemTestCase.h"
-#import "MbtilesLoadTestCase.h"
-#import "CrashProblem.h"
-#import "ChangeVectorsTestCase.h"
 
 #endif

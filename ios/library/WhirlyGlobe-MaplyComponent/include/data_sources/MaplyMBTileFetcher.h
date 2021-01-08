@@ -41,4 +41,7 @@
 /// Format directly from the metadata
 @property (nonatomic,nullable) NSString *format;
 
+///**修改 20210105--周炯
+@property (nonatomic,assign) BOOL darkMode;
+
 @end

@@ -44,6 +44,7 @@ public:
     LabelInfo_iOS(UIFont *font,bool screenObject);
     
     UIFont *font;
+    NSInteger gridStyleCount;
 };
 typedef std::shared_ptr<LabelInfo_iOS> LabelInfo_iOSRef;
     

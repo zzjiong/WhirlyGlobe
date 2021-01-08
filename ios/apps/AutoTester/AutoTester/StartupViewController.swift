@@ -3,7 +3,7 @@
 //  WhirlyGlobeSwiftTester
 //
 //  Created by jmnavarro on 14/09/15.
-//  Copyright (c) 2015-2019 mousebird consulting. All rights reserved.
+//  Copyright (c) 2015-2020 mousebird consulting. All rights reserved.
 //
 
 import UIKit
@@ -32,6 +32,7 @@ class StartupViewController: UITableViewController, UIPopoverPresentationControl
         LabelAnimationTestCase(),
 
         VectorsTestCase(),
+        ChangeVectorsTestCase(),
         GreatCircleTestCase(),
 		VectorStyleTestCase(),
 		VectorHoleTestCase(),
