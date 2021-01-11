@@ -16,6 +16,7 @@ class StartupViewController: UITableViewController, UIPopoverPresentationControl
         GlyphProblemTestCase(),
         CrashProblem(),
         MbtilesLoadTestCase(),
+        ActiveObjectTestCase(),
         NASAGIBSTestCase(),
 		AnimatedBasemapTestCase(),
         ImageReloadTestCase(),

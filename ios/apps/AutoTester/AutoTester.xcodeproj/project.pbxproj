@@ -1295,7 +1295,6 @@
 		88BF115A1BCDA9530002205E /* testCases */ = {
 			isa = PBXGroup;
 			children = (
-<<<<<<< HEAD
 				2B29944C243BA16000677DE4 /* SimpleStyleTestCase.swift */,
 				2B4B30A72395E0DE00854073 /* GlyphProblemTestCase.h */,
 				2B4B30A62395E0DE00854073 /* GlyphProblemTestCase.m */,
@@ -1320,12 +1319,8 @@
 				E5679F441CB72DE800369A15 /* WMSTestCase.h */,
 				E5679F451CB72DE800369A15 /* WMSTestCase.m */,
 				E5679F461CB72DE800369A15 /* FindHeightTestCase.h */,
-				E5679F471CB72DE800369A15 /* FindHeightTestCase.m */,
-=======
-				2B2A417C1D83454900098E12 /* ActiveObjectTestCase.h */,
-				2B2A417D1D83454900098E12 /* ActiveObjectTestCase.m */,
->>>>>>> db96e1fb91bf7b8cd0c805eca722b0ac1975a437
-				D8E12ECC1BDE9FD500BB7BC7 /* AnimatedBasemapTestCase.swift */,
+				E5679F471CB72DE800369A15 /* FindHeightTestCase.m */,				2B2A417C1D83454900098E12 /* ActiveObjectTestCase.h */,
+				2B2A417D1D83454900098E12 /* ActiveObjectTestCase.m */,				D8E12ECC1BDE9FD500BB7BC7 /* AnimatedBasemapTestCase.swift */,
 				2BD358F21DD3EA0400081EA8 /* AnimatedMarkersTestCase.swift */,
 				E5D2D6741DEDEABF00E02305 /* AnimationDelegateTestCase.swift */,
 				2B1E85A522B44D5800AB7208 /* BillboardTestCase.swift */,

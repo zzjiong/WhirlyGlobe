@@ -49,16 +49,11 @@
                                                                kMaplyEnable: @(YES),
                                                                kMaplyVecWidth: @(6.0),
                                                                }]];
-<<<<<<< HEAD
-        
         MaplyScreenLabel *label = [[MaplyScreenLabel alloc] init];
         label.text = @"1";
         label.loc = v0.center;
         [viewC addScreenLabels:@[label] desc:@{kMaplyTextColor: [UIColor greenColor],kMaplyBackgroundColor:[UIColor redColor]}];
-=======
-                
 //        [compObjs addObject:[viewC addScreenMarkers:@[marker] desc:nil]];
->>>>>>> db96e1fb91bf7b8cd0c805eca722b0ac1975a437
     }
 
     if (true) {
