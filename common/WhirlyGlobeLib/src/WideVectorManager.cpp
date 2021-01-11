@@ -1011,7 +1011,7 @@ SimpleIdentity WideVectorManager::instanceVectors(SimpleIdentity vecID,const Wid
     return newId;
 }
 
-void WideVectorManager::changeVectors(SimpleIdentity vecID,const VectorInfo &vecInfo,ChangeSet &changes)
+void WideVectorManager::changeVectors(SimpleIdentity vecID,const WideVectorInfo &vecInfo,ChangeSet &changes)
 {
     std::lock_guard<std::mutex> guardLock(lock);
 
@@ -1037,7 +1037,7 @@ void WideVectorManager::changeVectors(SimpleIdentity vecID,const VectorInfo &vec
             }
             
             // Changed line width
-            changes.push_back(new LineWidthChangeRequest(id, vecInfo.lineWidth));
+            changes.push_back(new LineWidthChangeRequest(id, vecInfo.width));
             
             // Changed draw priority
             changes.push_back(new DrawPriorityChangeRequest(id, vecInfo.drawPriority));

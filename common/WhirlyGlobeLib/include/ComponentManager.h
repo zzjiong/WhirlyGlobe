@@ -63,6 +63,10 @@ public:
     std::vector<VectorObjectRef> vecObjs;
     
     Point2d vectorOffset;
+    
+    std::string uuid;
+    std::string representation;
+
     bool isSelectable;
     bool enable;
     bool underConstruction;
@@ -97,7 +101,7 @@ public:
     
     /// Hand a component object over to be managed.
     /// Return an ID to refer to it in the future
-    virtual void addComponentObject(ComponentObjectRef compObj);
+    virtual void addComponentObject(const ComponentObjectRef &compObj, ChangeSet &changes);
     
     /// Check if the component object exists
     virtual bool hasComponentObject(SimpleIdentity compID);
@@ -113,10 +117,24 @@ public:
 
     /// Enable/disable the contents of a Component Object
     virtual void enableComponentObject(SimpleIdentity compID,bool enable,ChangeSet &changes);
-    
+
+    /// Enable/disable the contents of a Component Object
+    void enableComponentObject(const ComponentObjectRef &compID, bool enable, ChangeSet &changes);
+
+    /// Enable/disable the contents of a collection of Component Objects
+    void enableComponentObjects(const std::vector<ComponentObjectRef> &compIDs, bool enable, ChangeSet &changes);
+
     /// Enable/disable a whole group of Component Objects
     virtual void enableComponentObjects(const SimpleIDSet &compIDs,bool enable,ChangeSet &changes);
     
+    virtual void setRepresentation(const std::string &repName,
+                                   const std::set<std::string> &uuids,
+                                   ChangeSet &changes);
+
+    virtual void setRepresentation(const std::string &repName,
+                                   const std::unordered_set<std::string> &uuids,
+                                   ChangeSet &changes);
+
     /// Set a uniform block on the geometry for the given component objects
     virtual void setUniformBlock(const SimpleIDSet &compIDs,const RawDataRef &uniBlock,int bufferID,ChangeSet &changes);
     
@@ -136,12 +154,22 @@ public:
     GeometryManagerRef geomManager;
     FontTextureManagerRef fontTexManager;
     ParticleSystemManagerRef partSysManager;
-    
+
 protected:
     // Subclass fills this in
     virtual ComponentObjectRef makeComponentObject() = 0;
-    
+
+    template <typename TIter>
+    void setRepresentation(const std::string &repName,
+                           TIter beg, TIter end,
+                           ChangeSet &changes);
+
     ComponentObjectMap compObjs;
+
+    // maybe index objects by uuid...
+    //std::unordered_multimap<std::string, ComponentObjectRef> compObjsByUUID;
+
+    std::unordered_map<std::string, std::string> representations;
 };
 typedef std::shared_ptr<ComponentManager> ComponentManagerRef;
 
