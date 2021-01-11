@@ -38,5 +38,6 @@
 #import "MbtilesLoadTestCase.h"
 #import "CrashProblem.h"
 #import "ChangeVectorsTestCase.h"
+#import "RepresentationsTestCase.h"
 
 #endif
