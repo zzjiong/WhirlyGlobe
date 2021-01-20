@@ -80,15 +80,15 @@
                               kMaplyVecWidth: @(3.0),
                               }];
     
-//    MaplyScreenMarker *marker = [[MaplyScreenMarker alloc] init];
-//    marker.image = [UIImage imageNamed:@"airport-24"];
-//    marker.loc = v0.center;
-//    [globeVC addScreenMarkers:@[marker] desc:nil];
-//
-//    MaplyScreenLabel *label = [[MaplyScreenLabel alloc] init];
-//    label.text = @"1";
-//    label.loc = v0.center;
-//    [globeVC addScreenLabels:@[label] desc:@{kMaplyTextColor: [UIColor greenColor],kMaplyFont: [UIFont systemFontOfSize:10],kMaplyBackgroundColor:[UIColor redColor]}];
+    MaplyScreenMarker *marker = [[MaplyScreenMarker alloc] init];
+    marker.image = [UIImage imageNamed:@"airport-24"];
+    marker.loc = v0.center;
+    [globeVC addScreenMarkers:@[marker] desc:nil];
+
+    MaplyScreenLabel *label = [[MaplyScreenLabel alloc] init];
+    label.text = @"1";
+    label.loc = v0.center;
+    [globeVC addScreenLabels:@[label] desc:@{kMaplyTextColor: [UIColor greenColor],kMaplyFont: [UIFont systemFontOfSize:10],kMaplyBackgroundColor:[UIColor redColor]}];
 }
 
 - (void)addVectorWithGlobe:(WhirlyGlobeViewController *)globeVC{
