@@ -3,7 +3,7 @@
  *  WhirlyGlobeLib
  *
  *  Created by Steve Gifford on 2/15/19.
- *  Copyright 2011-2019 mousebird consulting
+ *  Copyright 2011-2021 mousebird consulting
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -66,6 +66,9 @@ public:
     
     std::string uuid;
     std::string representation;
+    
+    // If the object uses masks, these are the masks in use
+    SimpleIDSet maskIDs;
 
     bool isSelectable;
     bool enable;
@@ -76,7 +79,8 @@ public:
     
 public:
     // Don't call this
-    ComponentObject();
+    ComponentObject(bool enable = false, bool selectable = false);
+    ComponentObject(bool enable, bool selectable, const Dictionary &desc);
 };
 
 typedef std::shared_ptr<ComponentObject> ComponentObjectRef;
@@ -116,27 +120,34 @@ public:
     virtual void removeComponentObjects(PlatformThreadInfo *threadInfo,const std::vector<ComponentObjectRef> &compObjs,ChangeSet &changes);
 
     /// Enable/disable the contents of a Component Object
-    virtual void enableComponentObject(SimpleIdentity compID,bool enable,ChangeSet &changes);
+    virtual void enableComponentObject(SimpleIdentity compID,bool enable,ChangeSet &changes, bool resolveReps = false);
 
     /// Enable/disable the contents of a Component Object
-    void enableComponentObject(const ComponentObjectRef &compID, bool enable, ChangeSet &changes);
+    virtual void enableComponentObject(const ComponentObjectRef &compID, bool enable, ChangeSet &changes, bool resolveReps = false);
 
     /// Enable/disable the contents of a collection of Component Objects
-    void enableComponentObjects(const std::vector<ComponentObjectRef> &compIDs, bool enable, ChangeSet &changes);
+    virtual void enableComponentObjects(const std::vector<ComponentObjectRef> &compIDs, bool enable, ChangeSet &changes, bool resolveReps = false);
 
     /// Enable/disable a whole group of Component Objects
-    virtual void enableComponentObjects(const SimpleIDSet &compIDs,bool enable,ChangeSet &changes);
-    
-    virtual void setRepresentation(const std::string &repName,
-                                   const std::set<std::string> &uuids,
-                                   ChangeSet &changes);
+    virtual void enableComponentObjects(const SimpleIDSet &compIDs,bool enable,ChangeSet &changes, bool resolveReps = false);
 
-    virtual void setRepresentation(const std::string &repName,
-                                   const std::unordered_set<std::string> &uuids,
-                                   ChangeSet &changes);
+    virtual void setRepresentation(const std::string &repName, const std::string &fallback,
+                                   const std::vector<std::string> &uuids, ChangeSet &changes);
+
+    virtual void setRepresentation(const std::string &repName, const std::string &fallback,
+                                   const std::set<std::string> &uuids, ChangeSet &changes);
+
+    virtual void setRepresentation(const std::string &repName, const std::string &fallback,
+                                   const std::unordered_set<std::string> &uuids, ChangeSet &changes);
 
     /// Set a uniform block on the geometry for the given component objects
     virtual void setUniformBlock(const SimpleIDSet &compIDs,const RawDataRef &uniBlock,int bufferID,ChangeSet &changes);
+    
+    /// Pass in a mask name, get an ID to render into the mask target
+    virtual SimpleIdentity retainMaskByName(const std::string &maskName);
+
+    /// We're done with the given mask target
+    virtual void releaseMaskIDs(const SimpleIDSet &maskIDs);
     
     /// Find all the vectors that fall within or near the given point
     std::vector<std::pair<ComponentObjectRef,VectorObjectRef> > findVectors(const Point2d &pt,double maxDist,ViewStateRef viewState,const Point2f &frameSize,bool muti);
@@ -157,19 +168,37 @@ public:
 
 protected:
     // Subclass fills this in
-    virtual ComponentObjectRef makeComponentObject() = 0;
+    virtual ComponentObjectRef makeComponentObject(const Dictionary *desc = nullptr) = 0;
+
+    void removeComponentObjects_NoLock(PlatformThreadInfo *threadInfo,
+                                       const SimpleIDSet &compIDs,
+                                       std::vector<ComponentObjectRef> &objs);
 
     template <typename TIter>
     void setRepresentation(const std::string &repName,
+                           const std::string &fallback,
                            TIter beg, TIter end,
                            ChangeSet &changes);
 
-    ComponentObjectMap compObjs;
+    ComponentObjectMap compObjsById;
 
-    // maybe index objects by uuid...
-    //std::unordered_multimap<std::string, ComponentObjectRef> compObjsByUUID;
+    std::unordered_multimap<std::string, ComponentObjectRef> compObjsByUUID;
 
     std::unordered_map<std::string, std::string> representations;
+    
+    // Single entry for a mask ID
+    class MaskEntry {
+    public:
+        std::string name;
+        SimpleIdentity maskID;
+        unsigned long long refCount;
+    };
+    typedef std::shared_ptr<MaskEntry> MaskEntryRef;
+    std::unordered_map<std::string,MaskEntryRef> maskEntriesByName;
+    std::unordered_map<SimpleIdentity,MaskEntryRef> maskEntriesByID;
+    // We have 32 bits of range in the mask ID on iOS
+    unsigned int lastMaskID;
+    std::mutex maskLock;
 };
 typedef std::shared_ptr<ComponentManager> ComponentManagerRef;
 

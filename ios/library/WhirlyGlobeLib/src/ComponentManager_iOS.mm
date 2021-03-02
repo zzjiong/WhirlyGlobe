@@ -3,7 +3,7 @@
  *  WhirlyGlobeLib
  *
  *  Created by Steve Gifford on 2/15/19.
- *  Copyright 2011-2019 mousebird consulting
+ *  Copyright 2011-2021 mousebird consulting
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -21,11 +21,18 @@
 #import <Foundation/Foundation.h>
 #import "ComponentManager_iOS.h"
 #import "WhirlyKitLog.h"
+#import "NSString+Stuff.h"
+#import "Dictionary_NSDictionary.h"
 
 namespace WhirlyKit
 {
-    
+
 ComponentObject_iOS::ComponentObject_iOS()
+{
+}
+
+ComponentObject_iOS::ComponentObject_iOS(bool enable, bool isSelectable, const NSDictionary *_Nullable desc) :
+    ComponentObject(enable, isSelectable, iosDictionary(desc))
 {
 }
 
@@ -59,13 +66,19 @@ NSObject *ComponentManager_iOS::getSelectObject(SimpleIdentity selID)
     return nil;
 }
     
-ComponentObjectRef ComponentManager_iOS::makeComponentObject()
+ComponentObjectRef ComponentManager_iOS::makeComponentObject(const Dictionary *desc)
 {
-    return ComponentObject_iOSRef(new ComponentObject_iOS());
+    NSDictionary *nsDesc = desc ? [NSMutableDictionary fromDictionaryCPointer:desc] : nil;
+    return std::make_shared<ComponentObject_iOS>(/*enabled=*/false, /*isSelectable=*/false, nsDesc);
 }
     
 void ComponentManager_iOS::removeSelectObjects(SimpleIDSet selIDs)
 {
+    if (selIDs.empty())
+    {
+        return;
+    }
+
     std::lock_guard<std::mutex> guardLock(selectLock);
 
     for (auto selID : selIDs) {
@@ -85,13 +98,20 @@ void ComponentManager_iOS::removeComponentObjects(PlatformThreadInfo *threadInfo
         
         SimpleIDSet selectIDs;
         
-        for (auto compID: compIDs) {
-            auto it = compObjs.find(compID);
-            //**20201225 --周炯 修改
-            if ((it->second != NULL)){
+//        for (auto compID: compIDs) {
+//            auto it = compObjs.find(compID);
+//            //**20201225 --周炯 修改
+//            if ((it->second != NULL)){
+//                selectIDs.insert(it->second->selectIDs.begin(),it->second->selectIDs.end());
+//            }
+//        }
+        for (auto compID: compIDs)
+        {
+            const auto it = compObjsById.find(compID);
+            if (it != compObjsById.end() && it->second)
+            {
                 selectIDs.insert(it->second->selectIDs.begin(),it->second->selectIDs.end());
             }
-//            selectIDs.insert(it->second->selectIDs.begin(),it->second->selectIDs.end());
         }
         
         removeSelectObjects(selectIDs);
@@ -99,7 +119,7 @@ void ComponentManager_iOS::removeComponentObjects(PlatformThreadInfo *threadInfo
 
     ComponentManager::removeComponentObjects(threadInfo,compIDs, changes);
 }
-    
+
 void ComponentManager_iOS::clear()
 {
     std::lock_guard<std::mutex> guardLock(selectLock);
@@ -109,7 +129,10 @@ void ComponentManager_iOS::clear()
 void ComponentManager_iOS::dumpStats()
 {
     std::lock_guard<std::mutex> guardLock(selectLock);
-    wkLogLevel(Debug, "Component Objects: %d",selectObjectSet.size());
+    wkLogLevel(Debug, "Component Objects: %d",compObjsById.size());
+    wkLogLevel(Debug, "Selectable Objects: %d",selectObjectSet.size());
+    wkLogLevel(Debug, "Objects w/ UUID: %d",compObjsByUUID.size());
+    wkLogLevel(Debug, "Representations: %d",representations.size());
 }
-    
+
 }

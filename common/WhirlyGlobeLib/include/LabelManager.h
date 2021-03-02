@@ -81,6 +81,8 @@ public:
     float layoutImportance;
     /// Layout placement
     int layoutPlacement;
+    /// Shape for label to follow
+    VectorRing layoutShape;
 
     /// Some attributes can be overridden per label
     LabelInfoRef infoOverride;
@@ -102,14 +104,23 @@ public:
     virtual ~LabelManager();
 
     /// Add the given set of labels, returning an ID that represents the whole thing
-    SimpleIdentity addLabels(PlatformThreadInfo *threadInfo,std::vector<SingleLabel *> &labels,const LabelInfo &desc,ChangeSet &changes);
-    SimpleIdentity addLabels(PlatformThreadInfo *threadInfo,std::vector<SingleLabelRef> &labels,const LabelInfo &desc,ChangeSet &changes);
+    SimpleIdentity addLabels(PlatformThreadInfo *threadInfo,
+                             const std::vector<SingleLabel *> &labels,
+                             const LabelInfo &desc,ChangeSet &changes);
+    SimpleIdentity addLabels(PlatformThreadInfo *threadInfo,
+                             const std::vector<SingleLabelRef> &labels,
+                             const LabelInfo &desc,ChangeSet &changes);
 
     /// Change visual attributes (just the visibility range)
-    void changeLabel(PlatformThreadInfo *threadInfo,SimpleIdentity labelID,const LabelInfo &desc,ChangeSet &changes);
+    void changeLabel(PlatformThreadInfo *threadInfo,
+                     SimpleIdentity labelID,
+                     const LabelInfo &desc,
+                     ChangeSet &changes);
     
     /// Remove the given label(s)
-    void removeLabels(PlatformThreadInfo *threadInfo,SimpleIDSet &labelID,ChangeSet &changes);
+    void removeLabels(PlatformThreadInfo *threadInfo,
+                      SimpleIDSet &labelID,
+                      ChangeSet &changes);
     
     /// Enable/disable labels
     void enableLabels(SimpleIDSet labelID,bool enable,ChangeSet &changes);
