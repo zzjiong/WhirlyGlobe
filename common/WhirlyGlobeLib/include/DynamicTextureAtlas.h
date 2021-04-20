@@ -137,11 +137,13 @@ class DynamicTextureAddRegion : public ChangeRequest
 public:
     DynamicTextureAddRegion(SimpleIdentity texId,int startX,int startY,int width,int height,RawDataRef data)
     : texId(texId), startX(startX), startY(startY), width(width), height(height), data(data) { }
+    ~DynamicTextureAddRegion();
 
     /// Add the region.  Never call this.
     void execute(Scene *scene,SceneRenderer *renderer,WhirlyKit::View *view);
     
 protected:
+    bool wasRun = false;
     SimpleIdentity texId;
     int startX,startY,width,height;
     RawDataRef data;
@@ -200,7 +202,9 @@ public:
     void setPixelFudgeFactor(float pixFudge);
     
     /// Try to add the texture to one of our dynamic textures, or create one.
-    bool addTexture(SceneRenderer *sceneRender,const std::vector<Texture *> &textures,int frame,Point2f *realSize,Point2f *realOffset,SubTexture &subTex,ChangeSet &changes,int borderPixels,int bufferPixels=0,TextureRegion *outTexRegion=NULL);
+    bool addTexture(SceneRenderer *sceneRender,const std::vector<Texture *> &textures,int frame,
+            const Point2f *realSize,const Point2f *realOffset,SubTexture &subTex,ChangeSet &changes,
+            int borderPixels,int bufferPixels=0,TextureRegion *outTexRegion=nullptr);
     
     /// Update one of the frames of a multi-frame texture atlas
     bool updateTexture(Texture *,int frame,const TextureRegion &texRegion,ChangeSet &changes);

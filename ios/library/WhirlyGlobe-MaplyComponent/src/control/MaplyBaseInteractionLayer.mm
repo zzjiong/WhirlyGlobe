@@ -3,7 +3,7 @@
  *  MaplyComponent
  *
  *  Created by Steve Gifford on 12/14/12.
- *  Copyright 2012-2020 mousebird consulting
+ *  Copyright 2012-2021 mousebird consulting
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -91,24 +91,27 @@ public:
     MaplyBaseInteractionLayer * __weak layer;
     
     // Called right before we start generating layout objects
-    void startLayoutObjects()
+    virtual void startLayoutObjects(PlatformThreadInfo *) override
     {
         [layer startLayoutObjects];
     }
 
     // Figure out
-    void makeLayoutObject(int clusterID,const std::vector<LayoutObjectEntry *> &layoutObjects,LayoutObject &retObj)
+    virtual void makeLayoutObject(PlatformThreadInfo *,int clusterID,
+                                  const std::vector<LayoutObjectEntry *> &layoutObjects,
+                                  LayoutObject &retObj) override
     {
         [layer makeLayoutObject:clusterID layoutObjects:layoutObjects retObj:retObj];
     }
 
     // Called right after all the layout objects are generated
-    virtual void endLayoutObjects()
+    virtual void endLayoutObjects(PlatformThreadInfo *) override
     {
         [layer endLayoutObjects];
     }
     
-    void paramsForClusterClass(int clusterID,ClusterClassParams &clusterParams)
+    virtual void paramsForClusterClass(PlatformThreadInfo *,int clusterID,
+                                       ClusterClassParams &clusterParams) override
     {
         return [layer clusterID:clusterID params:clusterParams];
     }
@@ -149,6 +152,8 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
     visualView = inVisualView;
     mainThread = [NSThread currentThread];
     numActiveWorkers = 0;
+    maskRenderTargetID = EmptyIdentity;
+    maskTexID = EmptyIdentity;
     
     // Grab everything to force people to wait, hopefully
     imageLock.lock();
@@ -183,7 +188,7 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
     {
         setupInfo = inLayerThread.renderer->getRenderSetupInfo();
         ourClusterGen.layer = self;
-        compManager->layoutManager->addClusterGenerator(&ourClusterGen);
+        compManager->layoutManager->addClusterGenerator(nullptr,&ourClusterGen);
     }
     
     // We locked these in hopes of slowing down anyone trying to race us.  Unlock 'em.
@@ -743,6 +748,7 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
         destAttrs.insert(attr->attr);
 }
 
+// Resolve draw priority into a single number
 - (void)resolveDrawPriority:(NSDictionary *)desc info:(BaseInfo *)info drawPriority:(int)drawPriority offset:(int)offsetPriority
 {
     NSNumber *setting = desc[@"drawPriority"];
@@ -756,6 +762,20 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
     }
 }
 
+// Remap the mask strings to IDs
+- (void)resolveMaskIDs:(NSMutableDictionary *)desc compObj:(MaplyComponentObject *)compObj
+{
+    for (unsigned int ii=0;ii<MaxMaskSlots;ii++) {
+        NSString *attrName = [NSString stringWithFormat:@"maskID%d",ii];
+        id obj = desc[attrName];
+        if ([obj isKindOfClass:[NSString class]]) {
+            SimpleIdentity maskID = compManager->retainMaskByName([obj cStringUsingEncoding:NSUTF8StringEncoding]);
+            desc[attrName] = @(maskID);
+            compObj->contents->maskIDs.insert(maskID);
+        }
+    }
+}
+
 // Actually add the markers.
 // Called in an unknown thread
 - (void)addScreenMarkersRun:(NSArray *)argArray
@@ -764,12 +784,17 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
         return;
 
     NSArray *markers = [argArray objectAtIndex:0];
+    if (markers.count == 0)
+    {
+        return;
+    }
+
     MaplyComponentObject *compObj = [argArray objectAtIndex:1];
     NSDictionary *inDesc = [argArray objectAtIndex:2];
     MaplyThreadMode threadMode = (MaplyThreadMode)[[argArray objectAtIndex:3] intValue];
-    
-    TimeInterval now = scene->getCurrentTime();
-    
+
+    const TimeInterval now = scene->getCurrentTime();
+
     bool isMotionMarkers = false;
     if ([[markers objectAtIndex:0] isKindOfClass:[MaplyMovingScreenMarker class]])
         isMotionMarkers = true;
@@ -862,6 +887,12 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
             wgMarker->layoutHeight = wgMarker->height;
         }
         wgMarker->offset = Point2d(marker.offset.x,marker.offset.y);
+        
+        if (marker.maskID) {
+            wgMarker->maskID = compManager->retainMaskByName([marker.maskID cStringUsingEncoding:NSUTF8StringEncoding]);
+            compObj->contents->maskIDs.insert(wgMarker->maskID);
+            wgMarker->maskRenderTargetID = maskRenderTargetID;
+        }
         
         // Now for the motion related fields
         if ([marker isKindOfClass:[MaplyMovingScreenMarker class]])
@@ -973,7 +1004,7 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
         if (topObject == nullptr || sorter(obj, topObject))
             topObject = obj;
     
-    if (topObject == nullptr || topObject->obj.getGeometry().empty())
+    if (topObject == nullptr || topObject->obj.getGeometry()->empty())
         return;
     
     retObj.setWorldLoc(topObject->obj.getWorldLoc());
@@ -981,15 +1012,15 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
     if (topObject->obj.hasRotation())
         retObj.setRotation(topObject->obj.getRotation());
     
-    std::vector<ScreenSpaceObject::ConvexGeometry> allGeometry = topObject->obj.getGeometry();
+    const std::vector<ScreenSpaceConvexGeometry> *allGeometry = topObject->obj.getGeometry();
     
-    if (allGeometry.empty())
+    if (allGeometry->empty())
         return;
     
-    retObj.layoutPts = allGeometry.back().coords;
-    retObj.selectPts = allGeometry.back().coords;
+    retObj.layoutPts = allGeometry->back().coords;
+    retObj.selectPts = allGeometry->back().coords;
     
-    for (auto geometry : allGeometry)
+    for (auto geometry : *allGeometry)
         retObj.addGeometry(geometry);
 }
 
@@ -1021,7 +1052,7 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
     MaplyClusterGroup *group = [clusterGen makeClusterGroup:clusterInfo];
 
     // Geometry for the new cluster object
-    ScreenSpaceObject::ConvexGeometry smGeom;
+    ScreenSpaceConvexGeometry smGeom;
     smGeom.progID = progID;
     smGeom.coords.push_back(Point2d(-group.size.width/2.0,-group.size.height/2.0));
     smGeom.texCoords.push_back(TexCoord(0,1));
@@ -1272,7 +1303,11 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
     MaplyComponentObject *compObj = [argArray objectAtIndex:1];
     NSDictionary *inDesc = [argArray objectAtIndex:2];
     const auto threadMode = (MaplyThreadMode)[[argArray objectAtIndex:3] intValue];
-
+    
+    if (labels.count == 0) {
+        return;
+    }
+    
     const TimeInterval now = scene->getCurrentTime();
 
     const bool isMotionLabels = ([[labels objectAtIndex:0] isKindOfClass:[MaplyMovingScreenLabel class]]);
@@ -1338,6 +1373,12 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
             wgLabel->isSelectable = true;
             wgLabel->selectID = Identifiable::genId();
         }
+        
+        if (label.maskID) {
+            wgLabel->maskID = compManager->retainMaskByName([label.maskID cStringUsingEncoding:NSUTF8StringEncoding]);
+            compObj->contents->maskIDs.insert(wgLabel->maskID);
+            wgLabel->maskRenderTargetID = maskRenderTargetID;
+        }
 
         // Now for the motion related fields
         if ([label isKindOfClass:[MaplyMovingScreenLabel class]])
@@ -1347,6 +1388,22 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
             wgLabel->endLoc = GeoCoord(movingLabel.endLoc.x,movingLabel.endLoc.y);
             wgLabel->startTime = now;
             wgLabel->endTime = now + movingLabel.duration;
+        }
+        
+        if (label.layoutVec && !label.layoutVec->vObj->shapes.empty()) {
+            for (auto shape: label.layoutVec->vObj->shapes) {
+                auto shapeLin = std::dynamic_pointer_cast<VectorLinear>(shape);
+                if (shapeLin) {
+                    wgLabel->layoutShape = shapeLin->pts;
+                    break;
+                } else {
+                    auto shapeAr = std::dynamic_pointer_cast<VectorAreal>(shape);
+                    if (shapeAr && !shapeAr->loops.empty()) {
+                        wgLabel->layoutShape = shapeAr->loops[0];
+                        break;
+                    }
+                }
+            }
         }
 
         const auto selectId = wgLabel->selectID;
@@ -1683,13 +1740,13 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
         return;
 
     const NSArray *vectors = [argArray objectAtIndex:0];
-    const MaplyComponentObject *compObj = [argArray objectAtIndex:1];
+    MaplyComponentObject *compObj = [argArray objectAtIndex:1];
     NSDictionary *inDesc = [argArray objectAtIndex:2];
     const auto threadMode = (MaplyThreadMode)[[argArray objectAtIndex:3] intValue];
     
     iosDictionary dictWrap(inDesc);
     WideVectorInfo vectorInfo(dictWrap);
-    [self resolveInfoDefaults:inDesc info:&vectorInfo defaultShader:kMaplyShaderDefaultWideVector];
+    [self resolveInfoDefaults:inDesc info:&vectorInfo defaultShader:(vectorInfo.implType == WideVecImplBasic ? kMaplyShaderDefaultWideVector : kMaplyShaderWideVectorPerformance )];
     [self resolveDrawPriority:inDesc info:&vectorInfo drawPriority:kMaplyVectorDrawPriorityDefault offset:0];
     
     // Look for a texture and add it
@@ -1699,9 +1756,14 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
         compObj->contents->texs.insert(tex);
     }
     
-    ShapeSet shapes;
+    std::vector<VectorShapeRef> shapes;
     for (const MaplyVectorObject *vecObj in vectors)
     {
+        for (auto shape: vecObj->vObj->shapes) {
+            auto dict = std::dynamic_pointer_cast<iosMutableDictionary>(shape->getAttrDict());
+            [self resolveMaskIDs:dict->dict compObj:compObj];
+        }
+
         // Maybe need to make a copy if we're going to sample
         if (vectorInfo.subdivEps != 0.0)
         {
@@ -1729,13 +1791,13 @@ static inline bool dictBool(const NSDictionary *dict, const NSString *key, bool 
             {
                 [newVecObj subdivideToGlobe:eps];
             }
-
-            shapes.insert(newVecObj->vObj->shapes.begin(),newVecObj->vObj->shapes.end());
+            
+            shapes.insert(shapes.end(),newVecObj->vObj->shapes.begin(),newVecObj->vObj->shapes.end());
         }
         else
         {
             // We'll just reference it
-            shapes.insert(vecObj->vObj->shapes.begin(),vecObj->vObj->shapes.end());
+            shapes.insert(shapes.end(),vecObj->vObj->shapes.begin(),vecObj->vObj->shapes.end());
         }
     }
 
@@ -3445,10 +3507,17 @@ typedef std::set<GeomModelInstances *,struct GeomModelInstancesCmp> GeomModelIns
 }
 
 // Set the representation to use for the specified UUIDs
-- (void)setRepresentation:(NSString *__nullable)repName ofUUIDs:(NSArray<NSString *> *__nonnull)uuids mode:(MaplyThreadMode)threadMode
+- (void)setRepresentation:(NSString *__nullable)repName
+          fallbackRepName:(NSString *__nullable)fallbackRepName
+                  ofUUIDs:(NSArray<NSString *> *__nonnull)uuids
+                     mode:(MaplyThreadMode)threadMode
 {
-    NSArray *argArray = @[repName, uuids, @(threadMode)];
-    
+    NSArray *argArray = @[
+        repName ? repName : @"",
+        fallbackRepName ? fallbackRepName : @"",
+        uuids,
+        @(threadMode)];
+
     threadMode = [self resolveThreadMode:threadMode];
     switch (threadMode)
     {
@@ -3463,25 +3532,40 @@ typedef std::set<GeomModelInstances *,struct GeomModelInstancesCmp> GeomModelIns
     }
 }
 
-- (void)setRepresentation:(NSString *__nullable)repName ofUUIDs:(NSArray<NSString *> *__nonnull)uuids changes:(ChangeSet &)changes
+- (void)setRepresentation:(NSString *__nullable)repName
+          fallbackRepName:(NSString *__nullable)fallbackRepName
+                  ofUUIDs:(NSArray<NSString *> *__nonnull)uuids
+                  changes:(ChangeSet &)changes
 {
-    if (auto wr = WorkRegion(self)) {
+    if (auto wr = WorkRegion(self))
+    {
         [self setRepresentationImpl:repName ofUUIDs:uuids changes:changes];
     }
 }
 
-- (void)setRepresentationImpl:(NSString *__nullable)repName ofUUIDs:(NSArray<NSString *> *__nonnull)uuids changes:(ChangeSet &)changes
+- (void)setRepresentationImpl:(NSString *__nullable)repName
+                      ofUUIDs:(NSArray<NSString *> *__nonnull)uuids
+                      changes:(ChangeSet &)changes
+{
+    [self setRepresentationImpl:repName fallbackRepName:@"" ofUUIDs:uuids changes:changes];
+}
+
+- (void)setRepresentationImpl:(NSString *__nullable)repName
+              fallbackRepName:(NSString *__nullable)fallbackRepName
+                      ofUUIDs:(NSArray<NSString *> *__nonnull)uuids
+                      changes:(ChangeSet &)changes
 {
     if (isShuttingDown || (!layerThread && !offlineMode))
         return;
 
-    const auto repStr = [repName asStdString];  // blank if null
+    const auto repStr = [repName asStdString];
+    const auto fallbackStr = [fallbackRepName asStdString];
     std::unordered_set<std::string> uuidSet(uuids.count);
     for (const NSString *str in uuids)
     {
         uuidSet.insert([str asStdString]);
     }
-    compManager->setRepresentation(repStr, uuidSet, changes);
+    compManager->setRepresentation(repStr, fallbackStr, uuidSet, changes);
 }
 
 - (void)setRepresentationRun:(NSArray *)argArray
@@ -3490,12 +3574,12 @@ typedef std::set<GeomModelInstances *,struct GeomModelInstancesCmp> GeomModelIns
         return;
 
     NSString *repName = argArray[0];
-    NSArray<NSString *> *uuids = argArray[1];
-    const MaplyThreadMode threadMode = (MaplyThreadMode)[[argArray objectAtIndex:2] intValue];
+    NSString *fallbackRepName = argArray[1];
+    NSArray<NSString *> *uuids = argArray[2];
+    const MaplyThreadMode threadMode = (MaplyThreadMode)[[argArray objectAtIndex:3] intValue];
 
     ChangeSet changes;
-    [self setRepresentationImpl:repName ofUUIDs:uuids changes:changes];
-
+    [self setRepresentationImpl:repName fallbackRepName:fallbackRepName ofUUIDs:uuids changes:changes];
     [self flushChanges:changes mode:threadMode];
 }
 

@@ -10,7 +10,7 @@
 #define AutoTester_MaplyTesterBridge_h
 
 #import "MaplyBridge.h"
-
+#import "LineLabelsTestCase.h"
 #import "MaplyTestCase.h"
 #import "VectorsTestCase.h"
 #import "TextureVectorTestCase.h"

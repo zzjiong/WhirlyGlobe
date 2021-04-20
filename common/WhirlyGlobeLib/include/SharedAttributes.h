@@ -112,10 +112,12 @@
 
 #define MaplyDefaultWideVectorShader WKString("Default Wide Vector")
 #define MaplyWideVectorExpShader WKString("Default Wide Vector with expressions")
+#define MaplyWideVectorPerformanceShader WKString("Wide Vector performance")
 #define MaplyDefaultWideVectorGlobeShader WKString("Default Wide Vector Globe")
 
 #define MaplyScreenSpaceDefaultMotionShader WKString("Default Screenspace Motion")
 #define MaplyScreenSpaceDefaultShader WKString("Default Screenspace")
+#define MaplyScreenSpaceMaskShader WKString("Screenspace mask")
 #define MaplyScreenSpaceExpShader WKString("Screenspace with expressions")
 
 #define MaplyParticleSystemPointDefaultShader WKString("Default Part Sys (Point)")
@@ -163,6 +165,15 @@
 #define MaplyTextJustifyLeft WKString("left")
 /// Justify text to the right
 #define MaplyTextJustifyRight WKString("right")
+/// Layout text to right/left inside/outside by given number of piels
+#define MaplyTextLayoutOffset WKString("layoutoffset")
+/// Space between instances of text along line/inside polygon if repeating
+#define MaplyTextLayoutSpacing WKString("layoutspacing")
+/// How many times to repeat laid out text (-1 infinite, 0 not, or a number)
+#define MaplyTextLayoutRepeat WKString("layoutrepeat")
+/// Turn on or off layout debugging lines
+#define MaplyTextLayoutDebug WKString("layoutdebug")
+
 /// If set, we'll draw a shadow behind each label with this as the stroke size
 #define MaplyShadowSize WKString("shadowSize")
 /// If shadow size is being used, we can control the shadow color like so
@@ -220,6 +231,12 @@
 
 /// For wide vectors, we can widen them in screen space or display space
 #define MaplyWideVecCoordType WKString("wideveccoordtype")
+
+/// Basic or performance mode for wide vectors
+#define MaplyWideVecImpl WKString("widevecimplementation")
+
+/// Performance mode for wide vectors
+#define MaplyWideVecImplPerf WKString("widevecperformance")
 
 /// Widened vectors are widened in real space.  The width is in meters.
 #define MaplyWideVecCoordTypeReal WKString("real")

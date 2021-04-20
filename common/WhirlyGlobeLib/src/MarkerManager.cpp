@@ -1,9 +1,8 @@
-/*
- *  MarkerManager.mm
+/*  MarkerManager.cpp
  *  WhirlyGlobeLib
  *
  *  Created by Steve Gifford on 7/16/13.
- *  Copyright 2011-2019 mousebird consulting.
+ *  Copyright 2011-2021 mousebird consulting.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,7 +14,6 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- *
  */
 
 #import "MarkerManager.h"
@@ -97,7 +95,8 @@ Marker::Marker()
     height(0), width(0),
     layoutHeight(-1.0), layoutWidth(-1.0),
     rotation(0), offset(0,0), period(0),
-    timeOffset(0), layoutImportance(MAXFLOAT), orderBy(-1)
+    timeOffset(0), layoutImportance(MAXFLOAT), orderBy(-1),
+    maskID(EmptyIdentity), maskRenderTargetID(EmptyIdentity)
 {
 }
 
@@ -112,6 +111,7 @@ void Marker::addTexID(SimpleIdentity texID)
 }
 
 MarkerManager::MarkerManager()
+: maskProgID(EmptyIdentity)
 {
 }
 
@@ -129,10 +129,16 @@ typedef std::map<SimpleIDSet,BasicDrawableBuilderRef> DrawableMap;
 
 SimpleIdentity MarkerManager::addMarkers(const std::vector<Marker *> &markers,const MarkerInfo &markerInfo,ChangeSet &changes)
 {
-    SelectionManagerRef selectManager = std::dynamic_pointer_cast<SelectionManager>(scene->getManager(kWKSelectionManager));
-    LayoutManagerRef layoutManager = std::dynamic_pointer_cast<LayoutManager>(scene->getManager(kWKLayoutManager));
-    TimeInterval curTime = scene->getCurrentTime();
+    auto selectManager = scene->getManager<SelectionManager>(kWKSelectionManager);
+    auto layoutManager = scene->getManager<LayoutManager>(kWKLayoutManager);
+    const TimeInterval curTime = scene->getCurrentTime();
 
+    if (maskProgID == EmptyIdentity) {
+        Program *prog = scene->findProgramByName(MaplyScreenSpaceMaskShader);
+        if (prog)
+            maskProgID = prog->getId();
+    }
+    
     CoordSystemDisplayAdapter *coordAdapter = scene->getCoordAdapter();
     MarkerSceneRep *markerRep = new MarkerSceneRep();
     markerRep->fadeOut = markerInfo.fadeOut;
@@ -206,7 +212,7 @@ SimpleIdentity MarkerManager::addMarkers(const std::vector<Marker *> &markers,co
 
             shape->setPeriod(marker->period);
             
-            ScreenSpaceObject::ConvexGeometry smGeom;
+            ScreenSpaceConvexGeometry smGeom;
             for (unsigned int ii=0;ii<subTexs.size();ii++)
                 smGeom.texIDs.push_back(subTexs[ii].texId);
             smGeom.progID = markerInfo.programID;
@@ -242,6 +248,18 @@ SimpleIdentity MarkerManager::addMarkers(const std::vector<Marker *> &markers,co
                 shape->setEnableTime(markerInfo.startEnable, markerInfo.endEnable);
             shape->addGeometry(smGeom);
             markerRep->screenShapeIDs.insert(shape->getId());
+            
+            // Handle the mask rendering if it's there
+            if (marker->maskID != EmptyIdentity && marker->maskRenderTargetID != EmptyIdentity) {
+                // Make a copy of the geometry, but target it to the mask render target
+                const std::vector<ScreenSpaceConvexGeometry> *geom = shape->getGeometry();
+                for (auto entry: *geom) {
+                    entry.vertexAttrs.insert(SingleVertexAttribute(a_maskNameID, renderer->getSlotForNameID(a_maskNameID), (int)marker->maskID));
+                    entry.renderTargetID = marker->maskRenderTargetID;
+                    entry.progID = maskProgID;
+                    shape->addGeometry(entry);
+                }
+            }
             
             // Set up for the layout layer
             if (layoutImport < MAXFLOAT)
@@ -343,8 +361,8 @@ SimpleIdentity MarkerManager::addMarkers(const std::vector<Marker *> &markers,co
                     TimeInterval now = scene->getCurrentTime();
                     std::vector<SimpleIdentity> texIDVec;
                     std::copy(texIDs.begin(), texIDs.end(), std::back_inserter(texIDVec));
-                    BasicDrawableTexTweaker *tweak = new BasicDrawableTexTweaker(texIDVec,now,marker->period);
-                    draw->addTweaker(DrawableTweakerRef(tweak));
+                    auto tweak = std::make_shared<BasicDrawableTexTweaker>(texIDVec,now,marker->period);
+                    draw->addTweaker(tweak);
                 }
             }
             

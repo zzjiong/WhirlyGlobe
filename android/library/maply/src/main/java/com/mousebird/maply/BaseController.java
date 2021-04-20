@@ -1,3 +1,20 @@
+/*
+ * BaseController.java
+ * AutoTesterAndroid.maply
+ *
+ * Created by Steve Gifford
+ * Copyright © 2011-2021 mousebird consulting, inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+ * file except in compliance with the License. You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+ * CONDITIONS OF ANY KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+
 package com.mousebird.maply;
 
 import android.app.Activity;
@@ -20,7 +37,6 @@ import android.view.View;
 import android.widget.Toast;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -62,7 +78,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 	 * Listener to receive the screenshot in an asynchronous way.
 	*/
 	public interface ScreenshotListener {
-		public void onScreenshotResult(Bitmap screenshot);
+		void onScreenshotResult(Bitmap screenshot);
 	}
 
 	/**
@@ -81,6 +97,13 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 	
 	// Set when we're not in the process of shutting down
 	protected boolean running = false;
+
+	/**
+	 * Returns whether the controller is running.  Might not have started, might be shutdown.
+	 */
+	public boolean isRunning() {
+		return running;
+	}
 
 	// Implements the GL renderer protocol
 	protected RendererWrapper renderWrapper;
@@ -102,7 +125,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 	/**
 	 * Return the current coordinate system.
 	 */
-	public CoordSystem getCoordSystem() { return coordAdapter.coordSys; }
+	public CoordSystem getCoordSystem() { return (coordAdapter != null) ? coordAdapter.coordSys : null; }
 
 	public void takeScreenshot(ScreenshotListener listener)
 	{
@@ -153,8 +176,8 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 	protected com.mousebird.maply.View view = null;
 
 	// Layer thread we use for data manipulation
-	ArrayList<LayerThread> layerThreads = new ArrayList<LayerThread>();
-	ArrayList<LayerThread> workerThreads = new ArrayList<LayerThread>();
+	final ArrayList<LayerThread> layerThreads = new ArrayList<LayerThread>();
+	final ArrayList<LayerThread> workerThreads = new ArrayList<LayerThread>();
 		
 	// Bounding box we're allowed to move within
 	Point2d viewBounds[] = null;
@@ -209,17 +232,34 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 	 */
 	public LayerThread getWorkingThread()
 	{
-		// The first one is for use by the toolkit
-		int numAvailable = workerThreads.size();
-
-		if (numAvailable == 0)
+		if (workerThreads == null)
 			return null;
 
-		if (numAvailable == 1)
-			return workerThreads.get(0);
+		synchronized (workerThreads) {
+			// The first one is for use by the toolkit
+			int numAvailable = workerThreads.size();
 
-		return workerThreads.get((lastLayerThreadReturned++) % numAvailable);
+			if (numAvailable == 0)
+				return null;
+
+			if (numAvailable == 1)
+				return workerThreads.get(0);
+
+			return workerThreads.get((lastLayerThreadReturned++) % numAvailable);
+		}
 	}
+
+	/**
+	 * Return the thread that OpenGLES runs on.
+	 */
+	public Thread getRenderThread()
+	{
+		RendererWrapper wrap = renderWrapper;
+		if (wrap == null)
+			return null;
+		return wrap.renderThread;
+	}
+
 
 	/**
 	 * These are settings passed on construction.  We need these
@@ -237,7 +277,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 		 * at startup.  These are fully capable of adding geometry to the
 		 * system on their own (via ThreadCurrent).
 		 */
-		public int numWorkingThreads = 8;
+		public int numWorkingThreads = 16;
 		/**
 		 * If set we'll override the width of the rendering surface.
 		 *
@@ -476,7 +516,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 			String bundleName = pInfo.packageName;
 			String bundleBuild = "unknown";
 			String bundleVersion = pInfo.versionName;
-			String osversion = "Android " + Build.VERSION.RELEASE.toString();
+			String osversion = "Android " + Build.VERSION.RELEASE;
 			String model = Build.MANUFACTURER + " " + Build.MODEL;
 			String wgMaplyVersion = "3.0";
 			String json = String.format(
@@ -563,14 +603,28 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 	 @details This converts from a coordinate (3d) in the given coordinate system to the view controller's display space.  For the globe, display space is based on a radius of 1.0.
 	 */
 
-	public Point3d displayCoord (Point3d localCoord, CoordSystem fromSystem){
-
+	public Point3d displayCoord (Point3d localCoord, CoordSystem fromSystem)
+	{
 		Point3d loc3d = CoordSystem.CoordSystemConvert3d(fromSystem, coordAdapter.getCoordSystem(), localCoord);
 		Point3d pt = coordAdapter.localToDisplay(loc3d);
 
 		return pt;
 	}
-	
+
+	/**
+	 * Return a point in display space.  Display space is close to what's rendered.
+	 * For the globe it's a model space based on a radius of 1.0.
+	 */
+	public Point3d displayPointFromGeo(Point3d geoPt)
+	{
+		CoordSystemDisplayAdapter coordAdapter = (view != null) ? view.getCoordAdapter() : null;
+		if (coordAdapter == null) {
+			return null;
+		}
+		Point3d localPt = coordAdapter.getCoordSystem().geographicToLocal(geoPt);
+		return (localPt != null) ? coordAdapter.localToDisplay(localPt) : null;
+	}
+
 	/**
 	 * Return the main content view used to represent the Maply Control.
 	 */
@@ -595,6 +649,8 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 	 */
 	public void shutdown()
 	{
+//		Log.d("Maply", "BaseController: Shutdown");
+
 		startupAborted = true;
 		synchronized (this) {
 			running = false;
@@ -606,17 +662,23 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 				sampleLayer.isShuttingDown = true;
 
 			//		Choreographer.getInstance().removeFrameCallback(this);
-			ArrayList<LayerThread> layerThreadsToRemove = null;
+			ArrayList<LayerThread> layerThreadsToRemove = new ArrayList<LayerThread>();
 			if (layerThreads != null) {
 				synchronized (layerThreads) {
-					layerThreadsToRemove = new ArrayList<LayerThread>(layerThreads);
-				}
-				for (LayerThread layerThread : layerThreadsToRemove)
-					layerThread.shutdown();
-				synchronized (layerThreads) {
+					layerThreadsToRemove.addAll(layerThreads);
 					layerThreads.clear();
 				}
 			}
+			if (workerThreads != null) {
+				synchronized (workerThreads) {
+					layerThreadsToRemove.addAll(workerThreads);
+					workerThreads.clear();
+				}
+			}
+			for (LayerThread layerThread : layerThreadsToRemove)
+				layerThread.shutdown();
+
+//			Log.d("Maply", "BaseController: LayerThreads shutdown");
 
 			// Shut down the tile fetchers
 			for (RemoteTileFetcher tileFetcher : tileFetchers)
@@ -686,9 +748,6 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 			coordAdapter = null;
 			scene = null;
 			view = null;
-			// Using this as a sync object, so not a great idea
-//			layerThreads = null;
-			workerThreads = null;
 
 			activity = null;
 			tempBackground = null;
@@ -881,7 +940,21 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 			baseLayerThread.addLayer(layoutLayer);
 
 			// Add a default cluster generator
-			addClusterGenerator(new BasicClusterGenerator(new int[]{Color.argb(255, 255, 165, 0)}, 0, new Point2d(64, 64), this, activity));
+			BasicClusterGenerator generator = new BasicClusterGenerator(
+					new int[]{
+							Color.argb(192, 32, 224, 0),
+							Color.argb(255, 64, 192, 0),
+							Color.argb(255, 128, 128, 0),
+							Color.argb(255, 168, 96, 0),
+							Color.argb(255, 192, 64, 0),
+							Color.argb(255, 255, 0, 0),
+					},
+					0, new Point2d(64, 64), this, activity);
+			generator.cacheBitmaps(true);
+			generator.setExponentBase(2.5);
+			generator.setTextColor(Color.argb(255,224,224,224));
+			generator.setLayoutSize(new Point2d(70,70));
+			addClusterGenerator(generator);
 
 			// Run any outstanding runnables
 			if (surfaceTasks != null) {
@@ -929,9 +1002,11 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 			// Register the shaders
 			renderControl.setupShadersNative();
 
-			// Create the working threads
-			for (int ii = 0; ii < numWorkingThreads; ii++)
-				workerThreads.add(makeLayerThread(false));
+			synchronized (workerThreads) {
+				// Create the working threads
+				for (int ii = 0; ii < numWorkingThreads; ii++)
+					workerThreads.add(makeLayerThread(false));
+			}
 
 			rendererAttached = true;
 
@@ -1080,6 +1155,16 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 			renderControl.setPerfInterval(perfInterval);
 	}
 
+	/**
+	 * Get the zoom limits for the globe.
+	 */
+	public /*abstract*/ double getZoomLimitMin() { return 0.0; }
+
+	/**
+	 * Get the zoom limits for the globe.
+	 */
+	public /*abstract*/ double getZoomLimitMax() { return 0.0; }
+
 	/** Calculate the height that corresponds to a given Mapnik-style map scale.
 	 * <br>
 	 * Figure out the viewer height that corresponds to a given scale denominator (ala Mapnik).
@@ -1169,7 +1254,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 		}
 	}
 
-	ArrayList<QuadSamplingLayer> samplingLayers = new ArrayList<QuadSamplingLayer>();
+	final ArrayList<QuadSamplingLayer> samplingLayers = new ArrayList<>();
 
 	/**
 	 * Look for a sampling layer that matches the parameters given.
@@ -1190,11 +1275,15 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 		if (theLayer == null) {
 			// Set up the sampling layer
 			theLayer = new QuadSamplingLayer(this,params);
-			samplingLayers.add(theLayer);
 
 			// On its own layer thread
 			LayerThread layerThread = makeLayerThread(true);
+			if (layerThread == null) {
+				return null;
+			}
+
 			theLayer.layerThread = layerThread;
+			samplingLayers.add(theLayer);
 			layerThread.addLayer(theLayer);
 		}
 
@@ -1410,7 +1499,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 	 */
 	public ComponentObject addWideVector(VectorObject vec,WideVectorInfo wideVecInfo,RenderController.ThreadMode mode)
 	{
-		ArrayList<VectorObject> vecObjs = new ArrayList<VectorObject>();
+		ArrayList<VectorObject> vecObjs = new ArrayList<>();
 		vecObjs.add(vec);
 
 		return addWideVectors(vecObjs,wideVecInfo,mode);
@@ -1441,7 +1530,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 	 */
 	public ComponentObject addLoftedPoly(final VectorObject vec,final LoftedPolyInfo loftInfo,RenderController.ThreadMode mode)
 	{
-		ArrayList<VectorObject> vecObjs = new ArrayList<VectorObject>();
+		ArrayList<VectorObject> vecObjs = new ArrayList<>();
 		vecObjs.add(vec);
 		return addLoftedPolys(vecObjs,loftInfo,mode);
 	}
@@ -1475,7 +1564,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 		if (!running)
 			return null;
 
-		ArrayList<ScreenMarker> markers = new ArrayList<ScreenMarker>();
+		ArrayList<ScreenMarker> markers = new ArrayList<>();
 		markers.add(marker);
 		return addScreenMarkers(markers,markerInfo,mode);
 	}
@@ -1518,7 +1607,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 		if (!running)
 			return null;
 
-		ArrayList<Marker> markers = new ArrayList<Marker>();
+		ArrayList<Marker> markers = new ArrayList<>();
 		markers.add(marker);
 		return addMarkers(markers,markerInfo,mode);
 	}
@@ -1602,7 +1691,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 		if (!running)
 			return null;
 
-		List<Points> ptList = new ArrayList<Points>();
+		List<Points> ptList = new ArrayList<>();
 		ptList.add(pts);
 
 		return addPoints(ptList,geomInfo,mode);
@@ -1773,7 +1862,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
      */
 	public void removeTexture(final MaplyTexture tex,RenderController.ThreadMode mode)
 	{
-        ArrayList<MaplyTexture> texs = new ArrayList<MaplyTexture>();
+        ArrayList<MaplyTexture> texs = new ArrayList<>();
         texs.add(tex);
         removeTextures(texs,mode);
 	}
@@ -1991,7 +2080,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 		if (!running)
 			return;
 
-		ArrayList<ComponentObject> compObjs = new ArrayList<ComponentObject>();
+		ArrayList<ComponentObject> compObjs = new ArrayList<>();
 		compObjs.add(compObj);
 
 		enableObjects(compObjs, mode);
@@ -2008,7 +2097,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 		if (compObj == null)
 			return;
 
-		ArrayList<ComponentObject> compObjs = new ArrayList<ComponentObject>();
+		ArrayList<ComponentObject> compObjs = new ArrayList<>();
 		compObjs.add(compObj);
 		removeObjects(compObjs, mode);
 	}
@@ -2217,7 +2306,7 @@ public class BaseController implements RenderController.TaskManager, RenderContr
 	{
 		setEGLContext(glContext);
 
-		float widths[] = new float[2];
+		float[] widths = new float[2];
 		GLES20.glGetFloatv(GLES20.GL_ALIASED_LINE_WIDTH_RANGE, widths, 0);
 
 		setEGLContext(null);

@@ -3,7 +3,7 @@
  *  WhirlyGlobeMaplyComponent
  *
  *  Created by Stephen Gifford on 1/19/18.
- *  Copyright 2012-2018 Saildrone Inc.
+ *  Copyright 2012-2021 Saildrone Inc.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -74,11 +74,11 @@ typedef NS_ENUM(NSInteger, MaplyRenderType) {
 };
 
 /**
-    Render Controler Protocol defines the methods required of a render controller.
+    Render Controller Protocol defines the methods required of a render controller.
  
-    The view controllers and offscreen rendere implement this protocol.
+    The view controllers and offscreen renderers implement this protocol.
   */
-@protocol MaplyRenderControllerProtocol
+@protocol MaplyRenderControllerProtocol <NSObject>
 
 /**
  Set the offset for the screen space objects.
@@ -790,6 +790,16 @@ typedef NS_ENUM(NSInteger, MaplyRenderType) {
 - (void)removeRenderTarget:(MaplyRenderTarget * _Nonnull)renderTarget;
 
 /**
+    Set up the the mask render target.  We use it to keep one set of features from render on top of another set.
+ */
+- (void)startMaskTarget:(NSNumber * __nullable)scale;
+
+/**
+    Turn off the render target for masks.
+ */
+- (void)stopMaskTarget;
+
+/**
     Normally the layout layer runs periodically if you change something or when you move around.
     You can ask it to run ASAP right here.  Layout runs on its own thread, so there may still be a delay.
  */
@@ -843,7 +853,22 @@ typedef NS_ENUM(NSInteger, MaplyRenderType) {
     @param repName The representation name to apply, nil to return to the default
     @param threadMode For MaplyThreadAny we'll do the enable on another thread.  For MaplyThreadCurrent we'll block the current thread to finish the enable.  MaplyThreadAny is preferred.
  */
-- (void)setRepresentation:(NSString *__nullable)repName ofUUIDs:(NSArray<NSString *> *__nonnull)uuids mode:(MaplyThreadMode)threadMode;
+- (void)setRepresentation:(NSString *__nullable)repName
+                  ofUUIDs:(NSArray<NSString *> *__nonnull)uuids
+                     mode:(MaplyThreadMode)threadMode;
+
+/**
+    Set the representation to use for one or more UUIDs
+ 
+    @param uuids Array of NSString UUIDs to update
+    @param repName The representation name to apply, nil to return to the default
+    @param fallbackRepName The representation to use of no item with `repName` exists.
+    @param threadMode For MaplyThreadAny we'll do the enable on another thread.  For MaplyThreadCurrent we'll block the current thread to finish the enable.  MaplyThreadAny is preferred.
+ */
+- (void)setRepresentation:(NSString *__nullable)repName
+          fallbackRepName:(NSString *__nullable)fallbackRepName
+                  ofUUIDs:(NSArray<NSString *> *__nonnull)uuids
+                     mode:(MaplyThreadMode)threadMode;
 
 /**
  Pass a uniform block through to a shader.  Only for Metal.

@@ -94,7 +94,7 @@ SceneRendererMTL::SceneRendererMTL(id<MTLDevice> mtlDevice,id<MTLLibrary> mtlLib
 #endif
 
     init();
-
+        
     // Calculation shaders
     workGroups.push_back(WorkGroupRef(new WorkGroupMTL(WorkGroup::Calculation)));
     // Offscreen target render group
@@ -133,6 +133,11 @@ void SceneRendererMTL::setView(View *newView)
 void SceneRendererMTL::setScene(Scene *newScene)
 {
     SceneRenderer::setScene(newScene);
+    
+    // Slots we need to refer to on the C++ side
+    slotMap[a_maskNameID] = WhirlyKitShader::WKSVertexMaskAttribute;
+    for (unsigned int ii=0;ii<WhirlyKitMaxMasks;ii++)
+        slotMap[a_maskNameIDs[ii]] = WhirlyKitShader::WKSVertexMaskAttribute+ii;
 }
 
 bool SceneRendererMTL::setup(int sizeX,int sizeY,bool offscreen)
@@ -835,7 +840,7 @@ void SceneRendererMTL::render(TimeInterval duration,
                         
                         // Work through the drawables
                         for (const auto &draw : targetContainer->drawables) {
-                            auto drawMTL = dynamic_cast<DrawableMTL*>(draw.get());
+                            auto drawMTL = std::dynamic_pointer_cast<DrawableMTL>(draw);
                             if (!drawMTL) {
                                 wkLogLevel(Error, "SceneRendererMTL: Invalid drawable.  Skipping.");
                                 continue;
@@ -1079,7 +1084,7 @@ ParticleSystemDrawableBuilderRef  SceneRendererMTL::makeParticleSystemDrawableBu
 
 WideVectorDrawableBuilderRef SceneRendererMTL::makeWideVectorDrawableBuilder(const std::string &name) const
 {
-    return std::make_shared<WideVectorDrawableBuilderMTL>(name,scene);
+    return std::make_shared<WideVectorDrawableBuilderMTL>(name,this,scene);
 }
 
 RenderTargetRef SceneRendererMTL::makeRenderTarget() const

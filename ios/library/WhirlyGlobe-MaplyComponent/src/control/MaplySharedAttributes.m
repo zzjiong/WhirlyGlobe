@@ -137,6 +137,10 @@ NSString* const kMaplyTextJustify = MaplyTextJustify;
 NSString* const kMaplyTextJustifyRight = MaplyTextJustifyRight;
 NSString* const kMaplyTextJustifyLeft = MaplyTextJustifyLeft;
 NSString* const kMaplyTextJustifyCenter = MaplyTextJustifyCenter;
+NSString* const kMaplyTextLayoutOffset = MaplyTextLayoutOffset;
+NSString* const kMaplyTextLayoutSpacing = MaplyTextLayoutSpacing;
+NSString* const kMaplyTextLayoutRepeat = MaplyTextLayoutRepeat;
+NSString* const kMaplyTextLayoutDebug = MaplyTextLayoutDebug;
 
 /// These are used for screen and regular markers.
 NSString* const kMaplyClusterGroup = MaplyClusterGroupID;
@@ -219,6 +223,9 @@ NSString* const kMaplyWideVecMiterLimit = MaplyWideVecMiterLimit;
 /// This is the length you'd like the texture to start repeating after.
 /// It's real world coordinates for kMaplyWideVecCoordTypeReal and pixel size for kMaplyWideVecCoordTypeScreen
 NSString* const kMaplyWideVecTexRepeatLen = MaplyWideVecTexRepeatLen;
+
+NSString* const kMaplyWideVecImpl = MaplyWideVecImpl;
+NSString* const kMaplyWideVecImplPerf = MaplyWideVecImplPerf;
 
 /// Offset to left (negative) or right (positive) of the centerline
 NSString* const kMaplyWideVecOffset = MaplyWideVecOffset;
@@ -345,9 +352,11 @@ NSString* const kMaplyShaderBillboardEye = @"Default Billboard eye";
 
 NSString* const kMaplyShaderDefaultWideVector = @"Default Wide Vector";
 NSString* const kMaplyShaderWideVectorExp = @"Default Wide Vector with expressions";
+NSString* const kMaplyShaderWideVectorPerformance = @"Wide Vector performance";
 
 NSString* const kMaplyScreenSpaceDefaultMotionProgram = @"Default Screenspace Motion";
 NSString* const kMaplyScreenSpaceDefaultProgram = @"Default Screenspace";
+NSString* const kMaplyScreenSpaceMaskProgram = @"Screenspace mask";
 NSString* const kMaplyScreenSpaceExpProgram = @"Screenspace with expressions";
 
 NSString* const kMaplyShaderParticleSystemPointDefault = @"Default Part Sys (Point)";

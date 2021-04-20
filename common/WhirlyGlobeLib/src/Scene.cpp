@@ -37,22 +37,20 @@
 #import "LoftManager.h"
 #import "ParticleSystemManager.h"
 #import "BillboardManager.h"
-#import "WideVectorManager.h"
 #import "GeometryManager.h"
-#import "FontTextureManager.h"
 #import "ComponentManager.h"
 
 namespace WhirlyKit
 {
 
 SceneManager::SceneManager()
-: scene(NULL), renderer(NULL)
+: scene(nullptr), renderer(nullptr)
 {
 }
 
 void SceneManager::setRenderer(SceneRenderer *inRenderer)
 {
-//    std::lock_guard<std::mutex> guardLock(lock);
+//    std::lock_guard<std::mutex> guardLock(lock);  // ?
     renderer = inRenderer;
 }
 
@@ -62,12 +60,12 @@ void SceneManager::setScene(Scene *inScene)
     scene = inScene;
 }
 
-Scene *SceneManager::getScene()
+Scene *SceneManager::getScene() const
 {
     return scene;
 }
 
-SceneRenderer *SceneManager::getSceneRenderer()
+SceneRenderer *SceneManager::getSceneRenderer() const
 {
     return renderer;
 }
@@ -137,10 +135,10 @@ Scene::~Scene()
 
     programs.clear();
     
-    fontTextureManager = NULL;
+    fontTextureManager = nullptr;
 }
     
-CoordSystemDisplayAdapter *Scene::getCoordAdapter()
+CoordSystemDisplayAdapter *Scene::getCoordAdapter() const
 {
     return coordAdapter;
 }
@@ -176,14 +174,14 @@ void Scene::addChangeRequest(ChangeRequest *newChange)
         changeRequests.push_back(newChange);
 }
 
-int Scene::getNumChangeRequests()
+int Scene::getNumChangeRequests() const
 {
     std::lock_guard<std::mutex> guardLock(changeRequestLock);
 
     return changeRequests.size();
 }
 
-DrawableRef Scene::getDrawable(SimpleIdentity drawId)
+DrawableRef Scene::getDrawable(SimpleIdentity drawId) const
 {
     std::lock_guard<std::mutex> guardLock(drawablesLock);
     
@@ -246,11 +244,11 @@ void Scene::addManager(const std::string &name,const SceneManagerRef &manager)
 
 void Scene::addActiveModel(ActiveModelRef activeModel)
 {
-    activeModels.push_back(activeModel);
-    activeModel->startWithScene(this);
+    activeModels.emplace_back(std::move(activeModel));
+    activeModels.back()->startWithScene(this);
 }
 
-void Scene::removeActiveModel(ActiveModelRef activeModel)
+void Scene::removeActiveModel(const ActiveModelRef &activeModel)
 {
     int which = 0;
 
@@ -266,7 +264,7 @@ void Scene::removeActiveModel(ActiveModelRef activeModel)
     }
 }
 
-TextureBaseRef Scene::getTexture(SimpleIdentity texId)
+TextureBaseRef Scene::getTexture(SimpleIdentity texId) const
 {
     std::lock_guard<std::mutex> guardLock(textureLock);
     
@@ -274,7 +272,7 @@ TextureBaseRef Scene::getTexture(SimpleIdentity texId)
     return (it != textures.end()) ? it->second : TextureBaseRef();
 }
 
-const std::vector<Drawable *> Scene::getDrawables()
+const std::vector<Drawable *> Scene::getDrawables() const
 {
     std::vector<Drawable *> retDraws;
     
@@ -301,12 +299,12 @@ void Scene::markProgramsUnchanged()
     }
 }
 
-TimeInterval Scene::getCurrentTime()
+TimeInterval Scene::getCurrentTime() const
 {
     return (currentTime == 0.0) ? TimeGetCurrent() : currentTime;
 }
 
-TimeInterval Scene::getBaseTime()
+TimeInterval Scene::getBaseTime() const
 {
     return baseTime;
 }
@@ -371,7 +369,7 @@ int Scene::processChanges(WhirlyKit::View *view,SceneRenderer *renderer,TimeInte
     return numChanges;
 }
     
-bool Scene::hasChanges(TimeInterval now)
+bool Scene::hasChanges(TimeInterval now) const
 {
     bool changes = false;
     if (changeRequestLock.try_lock())
@@ -433,16 +431,18 @@ void Scene::removeSubTextures(const std::vector<SimpleIdentity> &subTexIDs)
 }
 
 // Look for a sub texture by ID
-SubTexture Scene::getSubTexture(SimpleIdentity subTexId)
+SubTexture Scene::getSubTexture(SimpleIdentity subTexId) const
 {
-    std::lock_guard<std::mutex> guardLock(subTexLock);
     SubTexture dumbTex;
     dumbTex.setId(subTexId);
-    SubTextureSet::iterator it = subTextureMap.find(dumbTex);
+
+    std::lock_guard<std::mutex> guardLock(subTexLock);
+
+    const auto it = subTextureMap.find(dumbTex);
     if (it == subTextureMap.end())
     {
         SubTexture passTex;
-        passTex.trans = passTex.trans.Identity();
+        passTex.trans = decltype(passTex.trans)::Identity();
         passTex.texId = subTexId;
         return passTex;
     }
@@ -486,7 +486,7 @@ bool Scene::removeTexture(SimpleIdentity texID)
     return false;
 }
     
-void Scene::dumpStats()
+void Scene::dumpStats() const
 {
     wkLogLevel(Verbose,"Scene: %ld drawables",drawables.size());
     wkLogLevel(Verbose,"Scene: %d active models",(int)activeModels.size());
@@ -539,7 +539,7 @@ void Scene::addProgram(ProgramRef prog)
     programs[prog->getId()] = prog;
 }
 
-void Scene::removeProgram(SimpleIdentity progId,RenderTeardownInfoRef teardown)
+void Scene::removeProgram(SimpleIdentity progId,const RenderTeardownInfoRef & /*teardown*/)
 {
     std::lock_guard<std::mutex> guardLock(programLock);
 
@@ -581,21 +581,17 @@ void Scene::setZoomSlotValue(int zoomSlot,float zoom)
     zoomSlots[zoomSlot] = zoom;
 }
 
-float Scene::getZoomSlotValue(int zoomSlot)
+float Scene::getZoomSlotValue(int zoomSlot) const
 {
     std::lock_guard<std::mutex> guardLock(zoomSlotLock);
-    
-    if (zoomSlot < 0 || zoomSlot >= MaplyMaxZoomSlots)
-        return 0.0;
 
-    return zoomSlots[zoomSlot];
+    return (zoomSlot < 0 || zoomSlot >= MaplyMaxZoomSlots) ? 0.0 : zoomSlots[zoomSlot];
 }
 
 void Scene::copyZoomSlots(float *dest)
 {
     std::lock_guard<std::mutex> guardLock(zoomSlotLock);
-
-    memcpy(dest, &zoomSlots[0], sizeof(float)*MaplyMaxZoomSlots);
+    std::copy(&zoomSlots[0], &zoomSlots[MaplyMaxZoomSlots], dest);
 }
 
 void AddTextureReq::setupForRenderer(const RenderSetupInfo *setupInfo,Scene *scene)
@@ -604,21 +600,21 @@ void AddTextureReq::setupForRenderer(const RenderSetupInfo *setupInfo,Scene *sce
         texRef->createInRenderer(setupInfo);
 }
     
-TextureBase *AddTextureReq::getTex()
+TextureBase *AddTextureReq::getTex() const
 {
     return texRef.get();
 }
     
 AddTextureReq::~AddTextureReq()
 {
-    texRef = NULL;
+    texRef = nullptr;
 }
     
 void AddTextureReq::execute(Scene *scene,SceneRenderer *renderer,WhirlyKit::View *view)
 {
     texRef->createInRenderer(renderer->getRenderSetupInfo());
     scene->addTexture(texRef);
-    texRef = NULL;
+    texRef = nullptr;
 }
 
 void RemTextureReq::execute(Scene *scene,SceneRenderer *renderer,WhirlyKit::View *view)
@@ -627,10 +623,14 @@ void RemTextureReq::execute(Scene *scene,SceneRenderer *renderer,WhirlyKit::View
     if (tex)
     {
         if (renderer->teardownInfo)
+        {
             renderer->teardownInfo->destroyTexture(renderer,tex);
+        }
         scene->removeTexture(texture);
     } else
+    {
         wkLogLevel(Warn,"RemTextureReq: No such texture.");
+    }
 }
     
 void AddDrawableReq::setupForRenderer(const RenderSetupInfo *setupInfo,Scene *scene)
@@ -645,20 +645,22 @@ void AddDrawableReq::setupForRenderer(const RenderSetupInfo *setupInfo,Scene *sc
 
 AddDrawableReq::~AddDrawableReq()
 {
-    drawRef = NULL;
+    drawRef = nullptr;
 }
 
 void AddDrawableReq::execute(Scene *scene,SceneRenderer *renderer,WhirlyKit::View *view)
 {
     // If this is an instance, deal with that madness
-    BasicDrawableInstance *drawInst = dynamic_cast<BasicDrawableInstance *>(drawRef.get());
-    if (drawInst)
+    if (auto drawInst = dynamic_cast<BasicDrawableInstance *>(drawRef.get()))
     {
-        DrawableRef theDraw = scene->getDrawable(drawInst->getMasterID());
-        BasicDrawableRef baseDraw = std::dynamic_pointer_cast<BasicDrawable>(theDraw);
-        if (baseDraw)
+        const auto theDraw = scene->getDrawable(drawInst->getMasterID());
+        if (const auto baseDraw = std::dynamic_pointer_cast<BasicDrawable>(theDraw))
+        {
             drawInst->setMaster(baseDraw);
-        else {
+        }
+        else
+        {
+            wkLogLevel(Error,"Found BasicDrawableInstance without masterID.  Dropping.");
             return;
         }
     }
@@ -669,7 +671,7 @@ void AddDrawableReq::execute(Scene *scene,SceneRenderer *renderer,WhirlyKit::Vie
     if (drawRef->getLocalMbr().valid())
         scene->addLocalMbr(drawRef->getLocalMbr());
             
-    drawRef = NULL;
+    drawRef = nullptr;
 }
 
 RemDrawableReq::RemDrawableReq(SimpleIdentity drawId) : drawID(drawId)
@@ -689,14 +691,17 @@ void RemDrawableReq::execute(Scene *scene,SceneRenderer *renderer,WhirlyKit::Vie
     {
         renderer->removeDrawable(draw, true, renderer->teardownInfo);
         scene->remDrawable(draw);
-    } else
+    }
+    else
+    {
         wkLogLevel(Warn,"Missing drawable for RemDrawableReq: %llu", drawID);
+    }
 }
 
 void AddProgramReq::execute(Scene *scene,SceneRenderer *renderer,WhirlyKit::View *view)
 {
     scene->addProgram(program);
-    program = NULL;
+    program = nullptr;
 }
 
 void RemProgramReq::execute(Scene *scene,SceneRenderer *renderer,WhirlyKit::View *view)
@@ -707,11 +712,7 @@ void RemProgramReq::execute(Scene *scene,SceneRenderer *renderer,WhirlyKit::View
 RunBlockReq::RunBlockReq(BlockFunc newFunc) : func(newFunc)
 {
 }
-    
-RunBlockReq::~RunBlockReq()
-{
-}
-    
+
 void RunBlockReq::execute(Scene *scene,SceneRenderer *renderer,WhirlyKit::View *view)
 {
     func(scene,renderer,view);
