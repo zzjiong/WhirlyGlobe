@@ -1,18 +1,17 @@
 package com.mousebird.maply
 
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Looper
+import android.util.DisplayMetrics
 import android.util.Log
 import androidx.core.net.toFile
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Request
 import okhttp3.Response
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import java.io.OutputStream
+import java.io.*
 import java.lang.ref.WeakReference
 import java.net.URL
 import kotlin.collections.ArrayList
@@ -56,6 +55,7 @@ open class MapboxKindaMap(
     var offlineRender: RenderController? = null
     var lineScale = 0.0
     var textScale = 0.0
+    var maxConcurrentLoad: Int? = null
 
     /* If set, we build an image/vector hybrid where the polygons go into
      *  the image layer and the linears and points are represented as vectors
@@ -113,6 +113,11 @@ open class MapboxKindaMap(
      * 1024^2 is good for vector tiles, 256^2 is good for image tiles
      */
     var minImportance = 1024.0 * 1024.0
+    
+    var sampleParams: SamplingParams? = null; private set
+    
+    private val displayMetrics: DisplayMetrics get() =
+        control.get()?.activity?.resources?.displayMetrics ?: Resources.getSystem().displayMetrics
 
     // Information about the sources as we fetch them
     private fun addTask(task: Call) {
@@ -150,15 +155,14 @@ open class MapboxKindaMap(
 
     // Generate a workable cache file path
     protected fun cacheName(url: Uri) : File? {
-        val theCacheDir = cacheDir ?: return null
-
-        // If the cache dir doesn't exist, we need to create it
-        if (!theCacheDir.exists() && !theCacheDir.createNewFile())
-            return null
-
         // It's already local
         if (url.scheme == "file" && url.toFile().exists())
             return url.toFile()
+
+        // If the cache dir doesn't exist, we need to create it
+        val theCacheDir = cacheDir ?: return null
+        if (!theCacheDir.isDirectory && !theCacheDir.mkdirs())
+            return null
 
         // Make up a cache name from the URL
         val cacheName = cacheNamePattern.replace(url.toString(), "_")
@@ -171,18 +175,14 @@ open class MapboxKindaMap(
         if (cacheDir == null || (url.scheme == "file" && url.toFile().exists()))
             return
 
-        var fOut: OutputStream? = null
         try {
-            val theCacheName = cacheName(url)
-            cacheDir?.mkdirs()
-
-            fOut = FileOutputStream(theCacheName)
-            fOut.write(data)
+            cacheName(url)?.let { theCacheName ->
+                FileOutputStream(theCacheName).use { fOut ->
+                    fOut.write(data)
+                }
+            }
         } catch (e: Exception) {
             Log.w("Maply", "Failed to cache file $e")
-        }
-        finally {
-            fOut?.close()
         }
     }
 
@@ -199,36 +199,52 @@ open class MapboxKindaMap(
             processStyleSheet()
         } else {
             val theStyleURL = styleURL ?: return
+
             // Dev might be overriding the source
-            val resolvedURL = cacheResolve(mapboxURLFor(theStyleURL))
+            val resolvedURL = mapboxURLFor(theStyleURL)
+
+            // todo: reduce duplication with processStylesheet
+            try {
+                val cacheUrl = cacheResolve(resolvedURL)
+                if (cacheUrl.toString().startsWith("file:")) {
+                    FileInputStream(cacheUrl.file).use {
+                        val json = it.bufferedReader().readText()
+                        if (json.isNotEmpty()) {
+                            styleSheetJSON = json
+                            processStyleSheet()
+                            checkFinished()
+                            return
+                        }
+                    }
+                }
+            } catch (ex: Exception) {
+                Log.e("MapboxKindaMap", "Failed to load cached stylesheet", ex)
+            }
 
             // Go get the style sheet (this will also handle local)
             val client = theControl.getHttpClient()
-            val builder = Request.Builder().url(resolvedURL)
+            val builder = Request.Builder().url(resolvedURL.toString())
             val task = client.newCall(builder.build())
             addTask(task)
             task.enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    Log.w("Maply", "Error fetching style sheet: \n$e")
-
+                    Log.w("Maply", "Error fetching style sheet",e)
                     stop()
                 }
-
                 @Throws(IOException::class)
                 override fun onResponse(call: Call, response: Response) {
-                    if (finished)
-                        return
-
-                    val jsonStr = response.body()?.string()
-                    if (jsonStr == null) {
-                        Log.w("Maply", "Error parsing style sheet")
-                        return
+                    response.use {
+                        if (!finished) {
+                            it.body()?.use { body ->
+                                val bytes = body.bytes()
+                                if (bytes.isNotEmpty()) {
+                                    styleSheetJSON = String(bytes)
+                                    cacheFile(theStyleURL, bytes)
+                                    processStyleSheet()
+                                }
+                            }
+                        }
                     }
-                    styleSheetJSON = jsonStr
-                    cacheFile(theStyleURL, response.body()!!.bytes())
-
-                    processStyleSheet()
-
                     clearTask(task)
                     checkFinished()
                 }
@@ -246,53 +262,74 @@ open class MapboxKindaMap(
         if (theControl == null || (styleURL == null && styleSheetJSON == null))
             return
         val client = theControl.getHttpClient()
-        styleSheet = MapboxVectorStyleSet(styleSheetJSON, styleSettings, theControl.activity.resources.displayMetrics, theControl)
+        styleSheet = MapboxVectorStyleSet(styleSheetJSON, styleSettings, displayMetrics, theControl)
 
         // Fetch what we need to for the sources
-        var success = true
         val sources = if (fetchSources) styleSheet?.sources else null
-        sources?.forEach { source ->
+        sources?.filter{ it.tileSpec == null }?.forEach { source ->
             // If the tile spec isn't embedded, we need to go get it
-            if (source.tileSpec == null && success) {
-                if (source.url?.isEmpty() != false) {
-                    Log.w("Maply", "Expecting either URL or tile info for a source.  Giving up.")
-                    success = false
-                }
-                val newURI = Uri.parse(source.url)
-                val url = cacheResolve(mapboxURLFor(newURI))
+            if (source.url?.isEmpty() != false) {
+                Log.w("Maply", "Expecting either URL or tile info for a source.  Giving up.")
+                return@forEach
+            }
 
-                // Go fetch the TileJSON
-                val builder2 = Request.Builder().url(url)
-                val task2 = client.newCall(builder2.build())
-                addTask(task2)
-                task2.enqueue(object : Callback {
-                    override fun onFailure(call: Call, e: IOException) {
-                        Log.w("Maply", "Error trying to fetch tileJson: \n$e")
+            val url = mapboxURLFor(Uri.parse(source.url))
 
-                        stop()
+            try {
+                val cacheUrl = cacheResolve(url)
+                if (cacheUrl.protocol == "file" && File(cacheUrl.file).isFile) {
+                    FileInputStream(cacheUrl.file).use {
+                        val json = it.bufferedReader().readText()
+                        if (json.isNotEmpty()) {
+                            processStylesheetJson(source, json)
+                            checkFinished()
+                            return@forEach
+                        }
                     }
+                }
+            } catch (ex: Exception) {
+                Log.e("MapboxKindaMap", "Failed to load cached stylesheet", ex)
+            }
 
-                    override fun onResponse(call: Call, response: Response) {
-                        response.body()?.string()?.let { jsonStr2 ->
-                            val resp = AttrDictionary()
-                            // todo: find a better way to convert from `AttrDictionary` to `AttrDictionaryEntry`, like an `asEntry` method.
-                            if (resp.parseFromJSON("{\"tileSpec\":[$jsonStr2]}")) {
-                                source.tileSpec = resp.getArray("tileSpec")
+            // Go fetch the TileJSON
+            val task = client.newCall(Request.Builder().url(url.toString()).build())
+            addTask(task)
+            task.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.w("MapboxKindaMap","Error trying to fetch tileJson",e)
+                    clearTask(task)
+                    stop()
+                }
+                override fun onResponse(call: Call, response: Response) {
+                    response.use {
+                        it.body()?.use { body ->
+                            val bytes = body.bytes()
+                            if (bytes.isNotEmpty()) {
+                                Log.d("MapboxKindaMap",
+                                    "Received ${bytes.size} bytes of ${body.contentType()} for $url")
+                                val json = String(bytes)
+                                if (json.isNotEmpty()) {
+                                    processStylesheetJson(source, json)
+                                    cacheFile(Uri.parse(url.toString()), bytes)
+                                }
                             }
                         }
-
-                        val newUri = Uri.parse(url.toString())
-                        cacheFile(newUri,response.body()!!.bytes())
-
-                        clearTask(task2)
-                        checkFinished()
                     }
-                })
+                    clearTask(task)
+                    checkFinished()
+                }
+            })
+        }
+    }
+
+    private fun processStylesheetJson(source: MapboxVectorStyleSet.Source, json: String) {
+        // todo: find a better way to convert from `AttrDictionary` to `AttrDictionaryEntry`, like an `asEntry` method.
+        AttrDictionary().apply {
+            if (parseFromJSON("{\"tileSpec\":[$json]}")) {
+                source.tileSpec = getArray("tileSpec")
             }
         }
-
-        if (!success)
-            stop()
+        checkFinished()
     }
 
     // Everything has been fetched, so fire up the loader
@@ -302,6 +339,9 @@ open class MapboxKindaMap(
         // Figure out overall min/max zoom
         var minZoom = 10000
         var maxZoom = -1
+
+        val tileInfos = ArrayList<TileInfoNew>()
+        val localFetchers = ArrayList<MBTileFetcher>()
         if (fetchSources) {
             styleSheet?.sources?.forEach { source ->
                 source.tileSpec?.forEach { specItem ->
@@ -311,17 +351,16 @@ open class MapboxKindaMap(
                     }
                 }
             }
-        }
-
-        val tileInfos = ArrayList<TileInfoNew>()
-        val localFetchers = ArrayList<MBTileFetcher>()
-        localMBTiles?.forEach { item ->
-            val fetcher = MBTileFetcher(theControl,item)
-            localFetchers.add(fetcher)
-            fetcher.tileInfo?.also {
-                tileInfos.add(it)
-                minZoom = it.minZoom.coerceAtMost(minZoom)
-                maxZoom = it.maxZoom.coerceAtLeast(maxZoom)
+        } else {
+            localMBTiles?.forEach { item ->
+                val fetcher = MBTileFetcher(theControl, item)
+                maxConcurrentLoad?.let { fetcher.maxParsing = it }
+                localFetchers.add(fetcher)
+                fetcher.tileInfo?.also {
+                    tileInfos.add(it)
+                    minZoom = it.minZoom.coerceAtMost(minZoom)
+                    maxZoom = it.maxZoom.coerceAtLeast(maxZoom)
+                }
             }
         }
 
@@ -338,35 +377,41 @@ open class MapboxKindaMap(
         styleSettings.textScale = if (textScale > 0) textScale else minImportance / (768.0 * 768.0) / 2
 
         // Parameters describing how we want a globe broken down
-        val sampleParams = SamplingParams()
-        sampleParams.coordSystem = SphericalMercatorCoordSystem()
-        sampleParams.minImportance = minImportance
-        sampleParams.singleLevel = true
-        sampleParams.coverPoles = (theControl is GlobeController)
-        sampleParams.edgeMatching = (theControl is GlobeController)
-        sampleParams.minZoom = minZoom
-        sampleParams.maxZoom = maxZoom
+        val params = SamplingParams().also {
+            it.coordSystem = SphericalMercatorCoordSystem()
+            it.minImportance = minImportance
+            it.singleLevel = true
+            it.coverPoles = (theControl is GlobeController)
+            it.edgeMatching = (theControl is GlobeController)
+            it.minZoom = minZoom
+            it.maxZoom = maxZoom
+        }
+        sampleParams = params
+        
         //sampleParams.reportedMaxZoom = 24
         // If we don't have a solid under-layer for each tile, we can't really
         //  keep level 0 around all the time
         if (!backgroundAllPolys) {
-            sampleParams.setForceMinLevel(false)
+            params.setForceMinLevel(false)
         } else {
-            sampleParams.minImportanceTop = 0.0
+            params.minImportanceTop = 0.0
         }
 
         // Image/vector hybrids draw the polygons into a background image
         if (imageVectorHybrid) {
-            startHybridLoader(sampleParams, tileInfos)
+            startHybridLoader(params, tileInfos, localFetchers)
         } else {
-            startSimpleLoader(sampleParams, tileInfos, localFetchers)
+            startSimpleLoader(params, tileInfos, localFetchers)
         }
-    
-        (control.get() as? MapController)?.let { mc ->
-            // Set the background clear to the color at level 0
-            // TODO: Make this change by level
-            styleSheetVector?.backgroundColorForZoom(0.0)?.let {
-                mc.setClearColor(it)
+
+        // If the stylesheet has a background layer, use it to set the clear color for flat maps
+        styleSheetVector?.let { ss ->
+            (control.get() as? MapController)?.let { mc ->
+                if (ss.hasBackgroundStyle()) {
+                    // Set the background clear to the color at level 0
+                    // TODO: Make this change by level
+                    mc.setClearColor(ss.backgroundColorForZoom(0.0))
+                }
             }
         }
 
@@ -384,8 +429,7 @@ open class MapboxKindaMap(
             parseFromJSON(styleSheetJSON)
         }
 
-        val metrics = control.activity.resources.displayMetrics
-        styleSheetVector = MapboxVectorStyleSet(vectorStyleDict, styleSettings, metrics, control)
+        styleSheetVector = MapboxVectorStyleSet(vectorStyleDict, styleSettings, displayMetrics, control)
 
         mapboxInterp = MapboxVectorInterpreter(styleSheetVector, control)
         loader = QuadPagingLoader(sampleParams, tileInfos.toTypedArray(), mapboxInterp, control).also {
@@ -396,26 +440,26 @@ open class MapboxKindaMap(
         }
      }
 
-    private fun startHybridLoader(sampleParams: SamplingParams, tileInfos: ArrayList<TileInfoNew>) {
+    private fun startHybridLoader(sampleParams: SamplingParams,
+                                  tileInfos: ArrayList<TileInfoNew>,
+                                  localFetchers: ArrayList<MBTileFetcher>) {
         val control = control.get() ?: return
         // Put together the tileInfoNew objects
-        styleSheet?.sources?.forEach { source ->
-            source.tileSpec?.forEach { tileSpecEntry ->
-                tileSpecEntry.dict?.also { tileSpec ->
-                    if (tileSpec.hasField("tiles")) {
-                        val minZoom = tileSpec.getInt("minzoom")
-                        val maxZoom = tileSpec.getInt("maxzoom")
-                        val tiles = tileSpec.getArray("tiles")
-                        val tileSrc = tiles[0].string
-                        val tileSource = RemoteTileInfoNew(tileSrc, minZoom, maxZoom)
-                        if (cacheDir != null) {
-                            val cacheName = cacheNamePattern.replace(tileSrc, "_")
-                            tileSource.cacheDir = File(cacheDir!!, cacheName)
+        styleSheet?.sources?.mapNotNull { it.tileSpec }?.flatMap { it.asIterable() }
+                           ?.mapNotNull { it.dict }?.forEach { tileSpec ->
+            val minZoom = tileSpec.getInt("minzoom")
+            val maxZoom = tileSpec.getInt("maxzoom")
+            if (minZoom < maxZoom) {
+                // A tile source may list multiple URLs, but we only support one.
+                tileSpec.getArray("tiles")
+                        .mapNotNull { it.string }
+                        .firstOrNull()?.let { tileUrl ->
+                    tileInfos.add(RemoteTileInfoNew(tileUrl, minZoom, maxZoom).also { tileSource ->
+                       if (cacheDir != null) {
+                            val cacheName = cacheNamePattern.replace(tileUrl, "_")
+                            tileSource.cacheDir = File(cacheDir, cacheName)
                         }
-                        tileInfos.add(tileSource)
-                    } else {
-                        Log.w("Maply", "TileInfo source missing tiles.  Skipping.")
-                    }
+                    })
                 }
             }
         }
@@ -448,8 +492,9 @@ open class MapboxKindaMap(
                 }
             }
             imageStyleDict.setArray("layers",newImageLayers.toTypedArray())
-            styleSheetImage = MapboxVectorStyleSet(imageStyleDict, styleSettings, control.activity.resources.displayMetrics, offlineRender)
-            offlineRender.setClearColor(styleSheetImage!!.backgroundColorForZoom(0.0))
+            styleSheetImage = MapboxVectorStyleSet(imageStyleDict, styleSettings, displayMetrics, offlineRender).also {
+                offlineRender.setClearColor(it.backgroundColorForZoom(0.0))
+            }
         }
 
         val vectorStyleDict = AttrDictionary()
@@ -469,8 +514,7 @@ open class MapboxKindaMap(
             }
             vectorStyleDict.setArray("layers", newVectorLayers.toTypedArray())
         }
-        val metrics = control.activity.resources.displayMetrics
-        styleSheetVector = MapboxVectorStyleSet(vectorStyleDict, styleSettings, metrics, control)
+        styleSheetVector = MapboxVectorStyleSet(vectorStyleDict, styleSettings, displayMetrics, control)
 
         mapboxInterp = if (offlineRender != null && styleSheetImage != null) {
             MapboxVectorInterpreter(styleSheetImage, offlineRender, styleSheetVector, control)
@@ -483,10 +527,16 @@ open class MapboxKindaMap(
             stop()
         }
 
-        // TODO: Handle more than one source
-        val imageLoader = QuadImageLoader(sampleParams, tileInfos[0], control)
-        imageLoader.setLoaderInterpreter(mapboxInterp)
-        loader = imageLoader
+        loader = QuadImageLoader(sampleParams, tileInfos.toTypedArray(), control, QuadLoaderBase.Mode.SingleFrame).apply {
+            setBaseDrawPriority(styleSettings.baseDrawPriority)
+            setDrawPriorityPerLevel(styleSettings.drawPriorityPerLevel)
+            setLoaderInterpreter(mapboxInterp)
+            setTileFetcher(localFetchers.firstOrNull() ?:
+                RemoteTileFetcher(control,"Remote Tile Fetcher").apply {
+                    setDebugMode(false)
+                })
+            setDebugMode(false)
+        }
     }
 
     // Stop trying to load data if we're doing that
@@ -511,9 +561,9 @@ open class MapboxKindaMap(
         mapboxInterp = null
         control.clear()
     }
-    
+
     private val control : WeakReference<BaseController> = WeakReference<BaseController>(inControl)
     private val outstandingFetches = ArrayList<Call?>()
-    private val cacheNamePattern = Regex("[/:?.{}]")
+    private val cacheNamePattern = Regex("[|?*<\":>+\\[\\]\\\\/]")
     private var finished = false
 }

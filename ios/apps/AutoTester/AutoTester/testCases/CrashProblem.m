@@ -53,9 +53,33 @@
     
     [globeVC setPosition:MaplyCoordinateMakeWithDegrees(120,40)];
   
-    [self addLineVectorWithGlobe:globeVC];
-    [self addVectorWithGlobe:globeVC];
+//    [self addLineVectorWithGlobe:globeVC];
+//    [self addVectorWithGlobe:globeVC];
 
+    [self addLineMaskWithGlobe:globeVC];
+}
+
+- (void)addLineMaskWithGlobe:(WhirlyGlobeViewController *)globeVC{
+    
+    [globeVC startMaskTarget:nil];
+    
+    MaplyCoordinate coords[2];
+    coords[0] = MaplyCoordinateMakeWithDegrees(100, 40);
+    coords[1] = MaplyCoordinateMakeWithDegrees(115, 35);
+    MaplyVectorObject *v0 = [[MaplyVectorObject alloc] initWithLineString:coords numCoords:2 attributes:nil];
+    [v0 subdivideToGlobeGreatCircle:0.0001];
+    v0.attributes[@"maskID0"] = @"A";
+    [globeVC addWideVectors:@[v0] desc:@{
+                           kMaplyColor: [UIColor redColor],
+                           kMaplyEnable: @(YES),
+                           kMaplyVecWidth: @(3.0),
+                           }];
+    
+    MaplyScreenMarker *marker = [[MaplyScreenMarker alloc] init];
+    marker.image = [UIImage imageNamed:@"airport-24"];
+    marker.loc = coords[0];
+    marker.maskID = @"A";
+    [globeVC addScreenMarkers:@[marker] desc:nil];
 }
 
 - (void)addLineVectorWithGlobe:(WhirlyGlobeViewController *)globeVC{

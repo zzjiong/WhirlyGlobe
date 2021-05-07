@@ -31,12 +31,7 @@ namespace WhirlyKit
 {
 
 MapboxVectorStyleSetImpl_Android::MapboxVectorStyleSetImpl_Android(Scene *scene,CoordSystem *coordSys,VectorStyleSettingsImplRef settings) :
-    MapboxVectorStyleSetImpl(scene,coordSys,std::move(settings)),
-    thisObj(nullptr),
-    makeLabelInfoMethod(nullptr),
-    makeCircleTextureMethod(nullptr),
-    makeLineTextureMethod(nullptr),
-    calculateTextWidthMethod(nullptr)
+    MapboxVectorStyleSetImpl(scene,coordSys,std::move(settings))
 {
 }
 
@@ -205,17 +200,19 @@ ComponentObjectRef MapboxVectorStyleSetImpl_Android::makeComponentObject(Platfor
 
 double MapboxVectorStyleSetImpl_Android::calculateTextWidth(PlatformThreadInfo *inInst,const LabelInfoRef &inLabelInfo,const std::string &text)
 {
-    auto inst = (PlatformInfo_Android *)inInst;
-
-    jstring jText = inst->env->NewStringUTF(text.c_str());
-    jdouble width = 0;
+    const auto inst = (PlatformInfo_Android *)inInst;
     if (auto labelInfo = dynamic_cast<LabelInfoAndroid*>(inLabelInfo.get()))
     {
-        width = inst->env->CallDoubleMethod(thisObj,calculateTextWidthMethod,jText,labelInfo->labelInfoObj);
+        if (jstring jText = inst->env->NewStringUTF(text.c_str()))
+        {
+            jdouble width = 0;
+            width = inst->env->CallDoubleMethod(thisObj, calculateTextWidthMethod, jText,
+                                                labelInfo->labelInfoObj);
+            inst->env->DeleteLocalRef(jText);
+            return width;
+        }
     }
-    inst->env->DeleteLocalRef(jText);
-
-    return width;
+    return 0.0;
 }
 
 void MapboxVectorStyleSetImpl_Android::addSelectionObject(SimpleIdentity selectID,const VectorObjectRef &vecObj,const ComponentObjectRef &compObj)
