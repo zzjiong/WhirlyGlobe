@@ -347,3 +347,55 @@ JNIEXPORT jobjectArray JNICALL Java_com_mousebird_maply_MapboxVectorStyleSet_get
     }
     return nullptr;
 }
+
+extern "C"
+JNIEXPORT void JNICALL Java_com_mousebird_maply_MapboxVectorStyleSet_setLayerVisible
+        (JNIEnv *env, jobject obj, jstring layerNameJava, jboolean visible)
+{
+    try
+    {
+        const auto styleSetRef = MapboxVectorStyleSetClassInfo::get(env,obj);
+        if (!styleSetRef)
+            return;
+
+        JavaString layerName(env,layerNameJava);
+        for (auto &layer : (*styleSetRef)->layers) {
+            if (layer->ident == layerName.getCString()) {
+                layer->visible = visible;
+            }
+        }
+    }
+    catch (...)
+    {
+        __android_log_print(ANDROID_LOG_ERROR, "Maply", "Crash in MapboxVectorStyleSet::setLayerVisible()");
+    }
+}
+
+extern "C"
+JNIEXPORT jboolean JNICALL Java_com_mousebird_maply_MapboxVectorStyleSet_addSpritesNative
+        (JNIEnv *env, jobject obj, jstring assetJSONJava, jlong texID, int width, int height)
+{
+    try
+    {
+        const auto styleSetRef = MapboxVectorStyleSetClassInfo::get(env,obj);
+        if (!styleSetRef)
+            return false;
+
+        JavaString assetJSON(env,assetJSONJava);
+        auto newSprites = std::make_shared<MapboxVectorStyleSprites>(texID,width,height);
+        auto dict = std::make_shared<MutableDictionary_Android>();
+        if (!dict->parseJSON(assetJSON.getCString()))
+            return false;
+        if (newSprites->parse(*styleSetRef, dict))
+        {
+            (*styleSetRef)->addSprites(newSprites);
+            return true;
+        }
+    }
+    catch (...)
+    {
+        __android_log_print(ANDROID_LOG_ERROR, "Maply", "Crash in MapboxVectorStyleSet::addSpritesNative()");
+    }
+
+    return true;
+}

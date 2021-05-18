@@ -115,7 +115,7 @@ class QuadDisplayControllerNew : public QuadTreeNew
 {
 public:
     QuadDisplayControllerNew(QuadDataStructure *dataStructure,QuadLoaderNew *loader,SceneRenderer *renderer);
-    virtual ~QuadDisplayControllerNew();
+    virtual ~QuadDisplayControllerNew() = default;
     
     /// Scene we're modifying
     Scene *getScene();
@@ -127,36 +127,39 @@ public:
     CoordSystem *getCoordSys();
     
     /// Maximum number of tiles loaded in at once
-    int getMaxTiles();
+    int getMaxTiles() const;
     void setMaxTiles(int);
     
     /// How often this layer gets notified of view changes.  1s by default.
-    TimeInterval getViewUpdatePeriod();
+    TimeInterval getViewUpdatePeriod() const;
     void setViewUpdatePeriod(TimeInterval);
 
     /// Load just the target level (and the lowest level)
-    bool getSingleLevel();
+    bool getSingleLevel() const;
     void setSingleLevel(bool);
     
     /// Do we always throw the min level into the mix or not
     void setKeepMinLevel(bool newVal,double height);
         
     /// Level offsets in single level mode
-    std::vector<int> getLevelLoads();
+    std::vector<int> getLevelLoads() const;
     void setLevelLoads(const std::vector<int> &);
     
     /// Minimum screen area to consider for a tile per level
-    std::vector<double> getMinImportancePerLevel();
+    std::vector<double> getMinImportancePerLevel() const;
     void setMinImportancePerLevel(const std::vector<double> &imports);
+
+    /// Set the MBR scale factor
+    void setMBRScaling(double newScale);
     
     /// Return the allocated zoom slot (for tracking continuous zoom)
-    int getZoomSlot();
+    int getZoomSlot() const;
     
     /// Return the geometry information being used
     QuadDataStructure *getDataStructure();
     
     /// Return the current view state, if there is one
-    ViewStateRef getViewState();
+    ViewStateRef getViewState() const;
     
     // Notify any attached loaders and generally get ready to party
     virtual void start();
@@ -173,8 +176,8 @@ public:
     
 protected:
     // QuadTreeNew overrides
-    double importance(const Node &node);
-    bool visible(const Node &node);
+    virtual double importance(const Node &node) override;
+    virtual bool visible(const Node &node) override;
     
     QuadDataStructure *dataStructure;
     QuadLoaderNew *loader;
@@ -189,6 +192,7 @@ protected:
     int minZoom,maxZoom,reportedMaxZoom;
     TimeInterval viewUpdatePeriod;
     bool keepMinLevel;
+    double mbrScaling;
     double keepMinLevelHeight;
     bool singleLevel;
     std::vector<int> levelLoads;

@@ -336,6 +336,8 @@ std::unique_ptr<Marker> MapboxVectorLayerSymbol::setupMarker(PlatformThreadInfo 
     }
     
     const double size = layout.iconSize->valForZoom(tileInfo->ident.level);
+    markerSize.x() *= styleSet->tileStyleSettings->markerScale;
+    markerSize.y() *= styleSet->tileStyleSettings->markerScale;
     if (!layout.iconSize->isExpression())
     {
         markerSize.x() *= size;
@@ -395,10 +397,7 @@ void MapboxVectorLayerSymbol::buildObjects(PlatformThreadInfo *inst,
     textSize = std::max(1.0, std::round(textSize));
 
     // When there's no dynamic scaling, we need to scale the text size down
-    if (!layout.textSize->isExpression())
-    {
-        textSize /= styleSet->tileStyleSettings->rendererScale;
-    }
+    textSize /= styleSet->tileStyleSettings->rendererScale;
 
     LabelInfoRef labelInfo = styleSet->makeLabelInfo(inst,layout.textFontNames,textSize);
     if (!labelInfo) {
@@ -431,9 +430,10 @@ void MapboxVectorLayerSymbol::buildObjects(PlatformThreadInfo *inst,
     labelInfo->scaleExp = layout.textSize->expression();
     if (labelInfo->scaleExp)
     {
+        float maxTextVal = layout.textSize->maxVal();
         for (float &stopOutput : labelInfo->scaleExp->stopOutputs)
         {
-            stopOutput /= textSize;
+            stopOutput /= maxTextVal;
         }
     }
 
@@ -441,7 +441,7 @@ void MapboxVectorLayerSymbol::buildObjects(PlatformThreadInfo *inst,
     {
         labelInfo->outlineColor = paint.textHaloColor->colorForZoom(zoomLevel);
         // Note: We're not using blur right here
-        labelInfo->outlineSize = std::max(0.5, (paint.textHaloWidth->valForZoom(zoomLevel) - paint.textHaloBlur->valForZoom(zoomLevel)) * layout.globalTextScale);
+        labelInfo->outlineSize = std::max(0.5, (paint.textHaloWidth->valForZoom(zoomLevel) - paint.textHaloBlur->valForZoom(zoomLevel)));
     }
 
     //    // Note: Made up value for pushing multi-line text together

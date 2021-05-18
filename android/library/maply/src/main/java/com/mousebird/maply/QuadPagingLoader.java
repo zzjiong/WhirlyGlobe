@@ -1,6 +1,7 @@
 package com.mousebird.maply;
 
 import android.os.Handler;
+import android.os.Looper;
 
 import java.lang.ref.WeakReference;
 
@@ -63,14 +64,12 @@ public class QuadPagingLoader extends QuadLoaderBase {
         loadInterp = inInterp;
         valid = true;
 
+        if (control == null)
+            return;
         // Let them change settings before we kick things off
-        Handler handler = new Handler(control.getActivity().getMainLooper());
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                if (!valid)
-                    return;
-
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(() -> {
+            if (valid) {
                 delayedInit(params);
             }
         });

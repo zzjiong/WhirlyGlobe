@@ -45,6 +45,7 @@ import java.util.List;
  * @author sjg
  *
  */
+@SuppressWarnings({"unused","UnusedReturnValue","RedundantSuppression"})
 public class MapController extends BaseController implements View.OnTouchListener, Choreographer.FrameCallback
 {
 
@@ -74,17 +75,17 @@ public class MapController extends BaseController implements View.OnTouchListene
 	 *
 	 * @param mainActivity The activity this is part of.
      */
-	public MapController(@Nullable Activity mainActivity, @NotNull Settings settings)
+	public MapController(@NotNull Activity mainActivity, @NotNull Settings settings)
 	{
 		super(mainActivity,settings);
 
 		if (settings.coordSys != null)
-			InitCoordSys(mainActivity,settings.coordSys,settings.displayCenter,settings.clearColor);
+			InitCoordSys(settings.coordSys,settings.displayCenter,settings.clearColor);
 		else
-			Init(mainActivity,settings.clearColor);
+			Init(settings.clearColor);
 	}
 
-	protected void InitCoordSys(Activity mainActivity,CoordSystem coordSys,Point3d displayCenter,int clearColor)
+	protected void InitCoordSys(CoordSystem coordSys,Point3d displayCenter,int clearColor)
 	{
 		Mbr mbr = coordSys.getBounds();
 		double scaleFactor = 1.0;
@@ -104,9 +105,12 @@ public class MapController extends BaseController implements View.OnTouchListene
 		setupTheRest(genCoordAdapter,clearColor);
 
 		// Set up the bounds
-		Point3d ll = new Point3d(),ur = new Point3d();
-		coordAdapter.getBounds(ll,ur);
-		setViewExtents(new Point2d(ll.getX(),ll.getY()),new Point2d(ur.getX(),ur.getY()));
+		if (coordAdapter != null) {
+			Point2d ll = new Point2d();
+			Point2d ur = new Point2d();
+			coordAdapter.getGeoBounds(ll, ur);
+			setViewExtents(ll, ur);
+		}
 	}
 
 	/**
@@ -118,20 +122,22 @@ public class MapController extends BaseController implements View.OnTouchListene
 	{
 		super(mainActivity,null);
 
-		Init(mainActivity, Color.BLACK);
+		Init(Color.BLACK);
 	}
 
-	protected void Init(Activity mainActivity,int clearColor)
+	protected void Init(int clearColor)
 	{
 		setupTheRest(new CoordSystemDisplayAdapter(new SphericalMercatorCoordSystem()),clearColor);
 
 		// Set up the bounds
-		Point3d ll = new Point3d(),ur = new Point3d();
-		coordAdapter.getBounds(ll,ur);
-		// Allow E/W wraping
-		ll.setValue(Float.MAX_VALUE, ll.getY(), ll.getZ());
-		ur.setValue(-Float.MAX_VALUE, ur.getY(), ur.getZ());
-		setViewExtents(new Point2d(ll.getX(),ll.getY()),new Point2d(ur.getX(),ur.getY()));
+		if (coordAdapter != null) {
+			Point3d ll = new Point3d(), ur = new Point3d();
+			coordAdapter.getBounds(ll, ur);
+			// Allow E/W wrapping
+			ll.setValue(Float.MAX_VALUE, ll.getY(), ll.getZ());
+			ur.setValue(-Float.MAX_VALUE, ur.getY(), ur.getZ());
+			setViewExtents(new Point2d(ll.getX(), ll.getY()), new Point2d(ur.getX(), ur.getY()));
+		}
 	}
 
 	protected void setupTheRest(CoordSystemDisplayAdapter inCoordAdapter,int clearColor)
@@ -335,42 +341,47 @@ public class MapController extends BaseController implements View.OnTouchListene
 		double minHeight = newMapView.minHeightAboveSurface();
 		double maxHeight = newMapView.maxHeightAboveSurface();
 		
-		boolean minOnScreen = checkCoverage(mbr,newMapView,minHeight);
-		boolean maxOnScreen = checkCoverage(mbr,newMapView,maxHeight);
+		final boolean minOnScreen = checkCoverage(mbr,newMapView,minHeight);
+		final boolean maxOnScreen = checkCoverage(mbr,newMapView,maxHeight);
 		
 		// No idea, just give up
-		if (!minOnScreen && !maxOnScreen)
-			return mapView.getLoc().getZ();
-		
-		if (minOnScreen)
+		if (minOnScreen) {
 			return minHeight;
-		
+		} else if (!maxOnScreen) {
+			return mapView.getLoc().getZ();
+		}
+
 		// Do a binary search between the two heights
-		double minRange = 1e-5;
-		do
-		{
-			double midHeight = (minHeight + maxHeight)/2.0;
-			boolean midOnScreen = checkCoverage(mbr,newMapView,midHeight);
-			
-			if (!minOnScreen && midOnScreen)
-			{
+		final double minRange = 1e-5;
+		while (minRange <= maxHeight - minHeight) {
+			final double midHeight = (minHeight + maxHeight) / 2.0;
+			if (checkCoverage(mbr, newMapView, midHeight)) {
 				maxHeight = midHeight;
-				maxOnScreen = midOnScreen;
-			} else if (!midOnScreen && maxOnScreen)
-			{
-				checkCoverage(mbr,newMapView,midHeight);
-				minHeight = midHeight;
-				minOnScreen = midOnScreen;
 			} else {
-				// Shouldn't happen, but probably does
-				break;
+				minHeight = midHeight;
 			}
-			
-			if (maxHeight-minHeight < minRange)
-				break;
-		} while (true);
+		}
 		
 		return maxHeight;
+	}
+
+	/**
+	 * Set the current view position.
+	 * @param pt Horizontal location of the center of the screen in geographic radians (not degrees).
+	 * @param z Height above the map in display units.
+	 */
+	public void setPositionGeo(final Point2d pt,final double z)
+	{
+		setPositionGeo(pt.getX(), pt.getY(), z);
+	}
+
+	/**
+	 * Set the current view position.
+	 * @param pt Location of the center of the screen in geographic radians (not degrees), z = height
+	 */
+	public void setPositionGeo(final Point3d pt)
+	{
+		setPositionGeo(pt.getX(), pt.getY(), pt.getZ());
 	}
 
 	/**
@@ -581,6 +592,37 @@ public class MapController extends BaseController implements View.OnTouchListene
 	}
 
 	/**
+	 * Return the current height
+	 */
+	public double getHeight()
+	{
+		if (!running || mapView == null || renderWrapper == null || renderWrapper.maplyRender == null || renderControl.frameSize == null)
+			return 0.0;
+
+		Point3d loc = mapView.getLoc();
+		return (loc != null) ? loc.getZ() : 0.0;
+	}
+
+	/**
+	 * Set the current height in display units
+	 */
+	public void setHeight(final double height)
+	{
+		if (!running || mapView == null || renderWrapper == null || renderWrapper.maplyRender == null || renderControl.frameSize == null)
+			return;
+
+		if (!rendererAttached) {
+			addPostSurfaceRunnable(() -> setHeight(height));
+			return;
+		}
+
+		Point3d curLoc = mapView.getLoc();
+		if (curLoc != null) {
+			mapView.setLoc(new Point3d(curLoc.getX(), curLoc.getY(), height), true);
+		}
+	}
+
+	/**
 	 * If set we'll allow the user to rotate.
 	 * If not, we'll keep north up at all times.
      */
@@ -728,15 +770,15 @@ public class MapController extends BaseController implements View.OnTouchListene
 
 		if (gestureDelegate != null)
 		{
-			Point3d localPt = mapView.getCoordAdapter().displayToLocal(loc);
+			final Point3d localPt = mapView.getCoordAdapter().displayToLocal(loc);
 			Point3d geoPt = null;
 			if (localPt != null)
 				geoPt = mapView.getCoordAdapter().getCoordSystem().localToGeographic(localPt);
-
-//			Object selObj = this.getObjectAtScreenLoc(screenLoc);
-			SelectedObject[] selObjs = this.getObjectsAtScreenLoc(screenLoc);
-
-			gestureDelegate.userDidLongPress(this, selObjs, geoPt.toPoint2d(), screenLoc);
+			if (geoPt != null) {
+				//Object selObj = this.getObjectAtScreenLoc(screenLoc);
+				final SelectedObject[] selObjs = this.getObjectsAtScreenLoc(screenLoc);
+				gestureDelegate.userDidLongPress(this, selObjs, geoPt.toPoint2d(), screenLoc);
+			}
 		}
 
 	}
@@ -744,9 +786,9 @@ public class MapController extends BaseController implements View.OnTouchListene
 	// Pass the touches on to the gesture handler
 	@Override
 	public boolean onTouch(View view, MotionEvent e) {
+		view.performClick();
 		if (running & gestureHandler != null)
 			return gestureHandler.onTouch(view, e);
-
 		return false;
 	}
 
@@ -769,17 +811,17 @@ public class MapController extends BaseController implements View.OnTouchListene
 		if (!userMotion)
 			isAnimating = true;
 
-        if (renderWrapper == null || renderWrapper.maplyRender == null)
-            return;
-        
-        if (!isPanning && !isRotating && !isZooming && !isAnimating)
-            if (gestureDelegate != null) {
-                gestureDelegate.mapDidStartMoving(this, userMotion);
-                
-                Choreographer c = Choreographer.getInstance();
-                if (c != null)
-                    c.postFrameCallback(this);
-            }
+		final RendererWrapper wrapper = renderWrapper;
+		final RenderController render = (wrapper != null) ? wrapper.maplyRender.get() : null;
+		final GestureDelegate delegate = gestureDelegate;
+        if (render != null && !isPanning && !isRotating && !isZooming && !isAnimating && delegate != null) {
+			delegate.mapDidStartMoving(this, true);
+
+			final Choreographer c = Choreographer.getInstance();
+			if (c != null) {
+				c.postFrameCallback(this);
+			}
+		}
     }
     
     /**

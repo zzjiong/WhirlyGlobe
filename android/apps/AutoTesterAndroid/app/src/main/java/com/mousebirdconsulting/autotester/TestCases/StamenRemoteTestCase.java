@@ -1,9 +1,8 @@
-/*
- *  StamenRemoteTestCase.java
+/*  StamenRemoteTestCase.java
  *  WhirlyGlobeLib
  *
  *  Created by Steve Gifford on 3/22/19.
- *  Copyright 2011-2019 mousebird consulting
+ *  Copyright 2011-2021 mousebird consulting
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -15,14 +14,12 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- *
  */
 package com.mousebirdconsulting.autotester.TestCases;
 
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Handler;
-import android.util.Log;
 
 import com.mousebird.maply.BaseController;
 import com.mousebird.maply.GlobeController;
@@ -41,17 +38,16 @@ import java.io.File;
 public class StamenRemoteTestCase extends MaplyTestCase {
 
 	public StamenRemoteTestCase(Activity activity) {
-		super(activity);
-
-		setTestName("Stamen Watercolor Remote");
+		super(activity, "Stamen Watercolor Remote", TestExecutionImplementation.Both);
 		setDelay(4);
-		this.implementation = TestExecutionImplementation.Both;
 	}
 
 	private QuadImageLoader setupImageLoader(ConfigOptions.TestType testType, BaseController baseController) {
 		String cacheDirName = "stamen_watercolor6";
 		File cacheDir = new File(getActivity().getCacheDir(), cacheDirName);
-		cacheDir.mkdir();
+
+		//noinspection ResultOfMethodCallIgnored
+		cacheDir.mkdirs();
 
 		RemoteTileInfoNew tileInfo = new RemoteTileInfoNew("http://tile.stamen.com/watercolor/{z}/{x}/{y}.png",0, 18);
 		tileInfo.cacheDir = cacheDir;
@@ -68,37 +64,27 @@ public class StamenRemoteTestCase extends MaplyTestCase {
 		loader.setImageFormat(RenderController.ImageFormat.MaplyImageUShort565);
 
 		// Change the color and then change it back
-		final Handler handler = new Handler();
-		handler.postDelayed(new Runnable() {
-			@Override
-			public void run() {
+		new Handler().postDelayed(() -> {
 				loader.setColor(Color.RED);
-				final Handler handler = new Handler();
-				handler.postDelayed(new Runnable() {
-					@Override
-					public void run() {
-						loader.setColor(Color.WHITE);
-					}
-				}, 4000);
-			}
-		}, 4000);
+				new Handler().postDelayed(() -> loader.setColor(Color.WHITE), 4000);
+			}, 4000);
 
 		return loader;
 	}
 
 	@Override
-	public boolean setUpWithGlobe(GlobeController globeVC) throws Exception {
-		setupImageLoader(ConfigOptions.TestType.GlobeTest,globeVC);
-		globeVC.setClearColor(Color.RED);
+	public boolean setUpWithGlobe(GlobeController globeVC) {
+		imageLoader = setupImageLoader(ConfigOptions.TestType.GlobeTest,globeVC);
+		//globeVC.setClearColor(Color.RED);
 		globeVC.animatePositionGeo(-3.6704803, 40.5023056, 5, 1.0);
 //		globeVC.setZoomLimits(0.0,1.0);
 
-		globeVC.addFrameRunnable(true, false, new Runnable() {
-			@Override
-			public void run() {
-				Log.d("Maply", "Hello from the render thread");
-			}
-		});
+		//globeVC.addFrameRunnable(true, false, new Runnable() {
+		//	@Override
+		//	public void run() {
+		//		Log.d("Maply", "Hello from the render thread");
+		//	}
+		//});
 
 		return true;
 	}
@@ -106,10 +92,21 @@ public class StamenRemoteTestCase extends MaplyTestCase {
 	@Override
 	public boolean setUpWithMap(MapController mapVC)
 	{
-		setupImageLoader(ConfigOptions.TestType.MapTest,mapVC);
+		imageLoader = setupImageLoader(ConfigOptions.TestType.MapTest,mapVC);
 		mapVC.animatePositionGeo(-3.6704803, 40.5023056, 5, 1.0);
 		mapVC.setAllowRotateGesture(true);
 //		mapVC.setZoomLimits(0.0,1.0);
 		return true;
 	}
+
+	@Override
+	public void shutdown() {
+		if (imageLoader != null) {
+			imageLoader.shutdown();
+			imageLoader = null;
+		}
+		super.shutdown();
+	}
+
+	private QuadImageLoader imageLoader;
 }

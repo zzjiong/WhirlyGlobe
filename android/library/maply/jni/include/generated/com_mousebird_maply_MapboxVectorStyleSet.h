@@ -87,6 +87,11 @@ JNIEXPORT void JNICALL Java_com_mousebird_maply_MapboxVectorStyleSet_setZoomSlot
 JNIEXPORT jobjectArray JNICALL Java_com_mousebird_maply_MapboxVectorStyleSet_getStyleInfo
         (JNIEnv *, jobject, jfloat zoom);
 
+JNIEXPORT void JNICALL Java_com_mousebird_maply_MapboxVectorStyleSet_setLayerVisible
+        (JNIEnv *, jobject, jstring, jboolean);
+
+JNIEXPORT jboolean JNICALL Java_com_mousebird_maply_MapboxVectorStyleSet_addSpritesNative
+        (JNIEnv *, jobject, jstring, jlong, jint , jint);
 /*
  * Class:     com_mousebird_maply_MapboxVectorStyleSet
  * Method:    initialise

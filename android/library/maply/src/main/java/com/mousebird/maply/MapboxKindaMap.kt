@@ -1,7 +1,25 @@
+/*  MapboxKindaMap.kt
+ *  WhirlyGlobeLib
+ *
+ *  Created by Steve Gifford on 5/27/2020.
+ *  Copyright 2011-2021 mousebird consulting
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.mousebird.maply
 
 import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Looper
 import android.util.DisplayMetrics
@@ -22,6 +40,7 @@ import kotlin.collections.ArrayList
  * Set the various settings before it gets going to modify how it works.
  * Callbacks control various pieces that might need to be intercepted.
  */
+@Suppress("unused")
 open class MapboxKindaMap(
         var styleSheetJSON: String?,
         var styleURL: Uri?,
@@ -48,14 +67,19 @@ open class MapboxKindaMap(
     var styleSheet: MapboxVectorStyleSet? = null
     var styleSheetImage: MapboxVectorStyleSet? = null
     var styleSheetVector: MapboxVectorStyleSet? = null
-    var spriteJSON: ByteArray? = null
+    var spriteJSON: String? = null
     var spritePNG: Bitmap? = null
     var mapboxInterp: MapboxVectorInterpreter? = null
     var loader: QuadLoaderBase? = null
     var offlineRender: RenderController? = null
     var lineScale = 0.0
     var textScale = 0.0
+    var markerScale = 0.0
     var maxConcurrentLoad: Int? = null
+    var debugMode = false
+
+    // These are run after a successful load of all the style sheet pieces
+    var postLoadRunnables = ArrayList<Runnable>()
 
     /* If set, we build an image/vector hybrid where the polygons go into
      *  the image layer and the linears and points are represented as vectors
@@ -66,7 +90,7 @@ open class MapboxKindaMap(
     /* If set, we'll sort all polygons into the background.
      * Works well zoomed out, less enticing zoomed in.
      */
-    var backgroundAllPolys = true
+    var backgroundAllPolys = false
 
     /**
      * If set, we'll fetch and use the sources from the style sheet.
@@ -121,7 +145,7 @@ open class MapboxKindaMap(
 
     // Information about the sources as we fetch them
     private fun addTask(task: Call) {
-        control.get()?.getActivity()?.runOnUiThread {
+        control.get()?.activity?.runOnUiThread {
             outstandingFetches.add(task)
         }
     }
@@ -235,7 +259,7 @@ open class MapboxKindaMap(
                 override fun onResponse(call: Call, response: Response) {
                     response.use {
                         if (!finished) {
-                            it.body()?.use { body ->
+                            it.body?.use { body ->
                                 val bytes = body.bytes()
                                 if (bytes.isNotEmpty()) {
                                     styleSheetJSON = String(bytes)
@@ -250,8 +274,6 @@ open class MapboxKindaMap(
                 }
             })
         }
-
-        // TODO: Look for the sprite sheets
 
         checkFinished()
     }
@@ -302,7 +324,7 @@ open class MapboxKindaMap(
                 }
                 override fun onResponse(call: Call, response: Response) {
                     response.use {
-                        it.body()?.use { body ->
+                        it.body?.use { body ->
                             val bytes = body.bytes()
                             if (bytes.isNotEmpty()) {
                                 Log.d("MapboxKindaMap",
@@ -319,6 +341,96 @@ open class MapboxKindaMap(
                     checkFinished()
                 }
             })
+        }
+
+        // Load the sprite sheets
+        val spriteURL = styleSheet?.spriteURL
+        if (spriteURL != null && fetchSources) {
+            val spriteJSONUrl = mapboxURLFor(Uri.parse("$spriteURL@2x.json"))
+            val spritePNGUrl = mapboxURLFor(Uri.parse("$spriteURL@2x.png"))
+            try {
+                val cacheUrl = cacheResolve(spriteJSONUrl)
+                if (cacheUrl.protocol == "file" && File(cacheUrl.file).isFile) {
+                    FileInputStream(cacheUrl.file).use {
+                        val json = it.bufferedReader().readText()
+                        if (json.isNotEmpty()) {
+                            spriteJSON = json
+                        }
+                    }
+                }
+            } catch (ex: Exception) {
+                Log.e("MapboxKindaMap", "Failed to load cached sprite sheet", ex)
+            }
+
+            if (spriteJSON == null) {
+                val task1 = client.newCall(Request.Builder().url(spriteJSONUrl.toString()).build())
+                addTask(task1)
+                task1.enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        Log.w("Maply", "Error fetching sprite sheet", e)
+                        stop()
+                    }
+
+                    override fun onResponse(call: Call, response: Response) {
+                        response.use {
+                            if (!finished) {
+                                it.body?.use { body ->
+                                    val bytes = body.bytes()
+                                    if (bytes.isNotEmpty()) {
+                                        spriteJSON = String(bytes)
+                                        cacheFile(spriteJSONUrl, bytes)
+                                    }
+                                }
+                            }
+                        }
+                        clearTask(task1)
+                        checkFinished()
+                    }
+                })
+            }
+
+            // Look for the PNG in the cache
+            try {
+                val cacheUrl = cacheResolve(spritePNGUrl)
+                if (cacheUrl.protocol == "file" && File(cacheUrl.file).isFile) {
+                    FileInputStream(cacheUrl.file).use {
+                        spritePNG = BitmapFactory.decodeFile(cacheUrl.path)
+                    }
+                }
+            } catch (ex: Exception) {
+                Log.e("MapboxKindaMap", "Failed to load cached sprite image", ex)
+            }
+
+            if (spritePNG == null) {
+                val task2 = client.newCall(Request.Builder().url(spritePNGUrl.toString()).build())
+                addTask(task2)
+                task2.enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        Log.w("Maply", "Error fetching sprite image", e)
+                        stop()
+                    }
+
+                    override fun onResponse(call: Call, response: Response) {
+                        response.use {
+                            if (!finished) {
+                                it.body?.use { body ->
+                                    val bytes = body.bytes()
+                                    if (bytes.isNotEmpty()) {
+                                        spritePNG =
+                                            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                        cacheFile(spritePNGUrl, bytes)
+                                    }
+                                }
+                            }
+                        }
+                        clearTask(task2)
+                        checkFinished()
+                    }
+                })
+            }
+
+            // Might have loaded from the caches
+            checkFinished()
         }
     }
 
@@ -371,10 +483,13 @@ open class MapboxKindaMap(
         }
 
         // Adjustment for loading (512 vs 1024 or so)
-        styleSettings.lineScale = if (lineScale > 0) lineScale else minImportance / (512.0 * 512.0) / 2
+        styleSettings.lineScale = lineScale
 
         // Similar adjustment for text
-        styleSettings.textScale = if (textScale > 0) textScale else minImportance / (768.0 * 768.0) / 2
+        styleSettings.textScale = textScale
+
+        // And let's not forget markers and circles
+        styleSettings.markerScale = markerScale
 
         // Parameters describing how we want a globe broken down
         val params = SamplingParams().also {
@@ -385,10 +500,11 @@ open class MapboxKindaMap(
             it.edgeMatching = (theControl is GlobeController)
             it.minZoom = minZoom
             it.maxZoom = maxZoom
+            // Let the reported zoom go beyond the maximum
+            it.reportedMaxZoom = 21
         }
         sampleParams = params
-        
-        //sampleParams.reportedMaxZoom = 24
+
         // If we don't have a solid under-layer for each tile, we can't really
         //  keep level 0 around all the time
         if (!backgroundAllPolys) {
@@ -431,12 +547,23 @@ open class MapboxKindaMap(
 
         styleSheetVector = MapboxVectorStyleSet(vectorStyleDict, styleSettings, displayMetrics, control)
 
+        // Set up the sprite sheet
+        if (spriteJSON != null && spritePNG != null) {
+            styleSheetVector?.addSprites(spriteJSON!!,spritePNG!!)
+        }
+
+        // Called after we've parsed the style sheet (again)
+        postLoadRunnables.forEach {
+            it.run()
+        }
+
         mapboxInterp = MapboxVectorInterpreter(styleSheetVector, control)
         loader = QuadPagingLoader(sampleParams, tileInfos.toTypedArray(), mapboxInterp, control).also {
             it.flipY = false
             if (localFetchers.isNotEmpty()) {
                 it.setTileFetcher(localFetchers[0])
             }
+            it.debugMode = debugMode
         }
      }
 
@@ -500,6 +627,11 @@ open class MapboxKindaMap(
         val vectorStyleDict = AttrDictionary()
         vectorStyleDict.parseFromJSON(styleSheetJSON)
 
+        // Called after we've parsed the style sheet (again)
+        postLoadRunnables.forEach {
+            it.run()
+        }
+
         // The polygons only go into the background in this case
         if (backgroundAllPolys) {
             val vectorLayers = vectorStyleDict.getArray("layers")
@@ -515,6 +647,11 @@ open class MapboxKindaMap(
             vectorStyleDict.setArray("layers", newVectorLayers.toTypedArray())
         }
         styleSheetVector = MapboxVectorStyleSet(vectorStyleDict, styleSettings, displayMetrics, control)
+
+        // Set up the sprite sheet
+        if (spriteJSON != null && spritePNG != null) {
+            styleSheetVector?.addSprites(spriteJSON!!,spritePNG!!)
+        }
 
         mapboxInterp = if (offlineRender != null && styleSheetImage != null) {
             MapboxVectorInterpreter(styleSheetImage, offlineRender, styleSheetVector, control)
@@ -533,9 +670,9 @@ open class MapboxKindaMap(
             setLoaderInterpreter(mapboxInterp)
             setTileFetcher(localFetchers.firstOrNull() ?:
                 RemoteTileFetcher(control,"Remote Tile Fetcher").apply {
-                    setDebugMode(false)
+                    debugMode = this@MapboxKindaMap.debugMode
                 })
-            setDebugMode(false)
+            debugMode = this@MapboxKindaMap.debugMode
         }
     }
 
@@ -546,7 +683,7 @@ open class MapboxKindaMap(
     
         // Gotta run on the main thread
         if (Looper.getMainLooper().thread != Thread.currentThread()) {
-            theControl.getActivity().runOnUiThread { stop() }
+            theControl.activity?.runOnUiThread { stop() }
 
             return
         }
@@ -556,6 +693,10 @@ open class MapboxKindaMap(
         }
         outstandingFetches.clear()
 
+        styleSheet?.shutdown()
+        styleSheetVector?.shutdown()
+        styleSheetImage?.shutdown()
+
         loader?.shutdown()
         loader = null
         mapboxInterp = null
@@ -564,6 +705,14 @@ open class MapboxKindaMap(
 
     private val control : WeakReference<BaseController> = WeakReference<BaseController>(inControl)
     private val outstandingFetches = ArrayList<Call?>()
-    private val cacheNamePattern = Regex("[|?*<\":>+\\[\\]\\\\/]")
+    private val cacheNamePattern = Regex("[|?*<\":%@>+\\[\\]\\\\/]")
     private var finished = false
+
+    init {
+        val metrics = displayMetrics
+        val dpi = (metrics.xdpi + metrics.ydpi) / 2.0
+        lineScale = dpi / 230.0
+        textScale = dpi / 150.0
+        markerScale = dpi / 150.0
+    }
 }

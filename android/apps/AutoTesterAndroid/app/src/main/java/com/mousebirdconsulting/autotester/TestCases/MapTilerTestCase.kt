@@ -5,7 +5,7 @@ import android.net.Uri
 import android.util.Log
 import com.mousebird.maply.*
 import com.mousebirdconsulting.autotester.Framework.MaplyTestCase
-import okio.Okio
+import okio.*
 import java.io.IOException
 import kotlin.math.min
 
@@ -25,25 +25,16 @@ open class MapTilerTestCase : MaplyTestCase
     
     // Set up the loader (and all the stuff it needs) for the map tiles
     private fun setupLoader(control: BaseController, whichMap: Int) {
-        // Approximate the effect of `UIScreen.scale` on iOS
-        val dpi = displayDensity ?: Point2d(200.0,200.0)
-        val scale = min(dpi.x,dpi.y) / 225
-        
         getStyleJson(whichMap)?.let { json ->
             loader?.shutdown()
             loader = null
             map?.stop()
             map = null
             
-            val settings = VectorStyleSettings(scale).apply {
-                baseDrawPriority = QuadImageLoaderBase.BaseDrawPriorityDefault + 1000
-                drawPriorityPerLevel = 100
-            }
-            map = MapboxKindaMap(json, control, settings).apply {
+            map = MapboxKindaMap(json, control).apply {
                 mapboxURLFor = { Uri.parse(it.toString().replace("MapTilerKey", token)) }
                 backgroundAllPolys = (control is GlobeController)
                 imageVectorHybrid = true
-                minImportance = 768.0 * 768.0
                 setup(this)
                 start()
             }
@@ -63,7 +54,13 @@ open class MapTilerTestCase : MaplyTestCase
         getMaps().elementAt(whichMap)?.let {
             Log.i(javaClass.name, "Loading $it")
             try {
-                Okio.buffer(Okio.source(getActivity().assets.open(it))).readUtf8()
+                activity.assets.open(it).use { stream ->
+                    stream.source().use { source ->
+                        source.buffer().use { buffer ->
+                            buffer.readUtf8()
+                        }
+                    }
+                }
             } catch (e: IOException) {
                 Log.w(javaClass.simpleName, "Failed to load style $it", e)
                 return null
@@ -94,7 +91,7 @@ open class MapTilerTestCase : MaplyTestCase
     override fun setUpWithMap(mapVC: MapController?): Boolean {
         baseViewC = mapVC?.also {
             setupLoader(it, currentMap)
-            it.animatePositionGeo(Point2d.FromDegrees(-100.0, 40.0), 0.5, 0.0, 0.5)
+            it.animatePositionGeo(Point2d.FromDegrees(-100.0, 40.0), 1.5, 0.0, 0.5)
         }
         return true
     }

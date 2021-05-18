@@ -43,7 +43,7 @@
     coords[0] = MaplyCoordinateMakeWithDegrees(100, 40);
     coords[1] = MaplyCoordinateMakeWithDegrees(115, 35);
     MaplyVectorObject *v0 = [[MaplyVectorObject alloc] initWithLineString:coords numCoords:2 attributes:nil];
-    [v0 subdivideToGlobeGreatCircle:0.00001];
+    [v0 subdivideToFlatGreatCirclePrecise:0.01];
     
     [globeVC addWideVectors:@[v0] desc:@{
                            kMaplyColor: [UIColor redColor],
@@ -52,21 +52,24 @@
                            }];
     
     MaplyVectorObject *v1 = [[MaplyVectorObject alloc] initWithLineString:coords numCoords:2 attributes:nil];
-    [v1 subdivideToGlobeGreatCircle:0.00001];
+    [v1 subdivideToFlatGreatCirclePrecise:0.01];
     [globeVC addWideVectors:@[v1] desc:@{
                               kMaplyColor: [UIColor greenColor],
                               kMaplyEnable: @(YES),
                               kMaplyVecWidth: @(3.0),
                               }];
     
+    GeoLibInv inv = GeoLibCalcInverseF(coords[0], coords[1]);
+    MaplyCoordinate midPt = GeoLibCalcDirectF(coords[0], inv.azimuth1, inv.distance / 2.0);
+    
     MaplyScreenMarker *marker = [[MaplyScreenMarker alloc] init];
     marker.image = [UIImage imageNamed:@"airport-24"];
-    marker.loc = v0.center;
+    marker.loc = midPt;
     [globeVC addScreenMarkers:@[marker] desc:nil];
 
     MaplyScreenLabel *label = [[MaplyScreenLabel alloc] init];
     label.text = @"label";
-    label.loc = v0.center;
+    label.loc = midPt;
     [globeVC addScreenLabels:@[label] desc:@{kMaplyTextColor: [UIColor greenColor],kMaplyFont: [UIFont systemFontOfSize:10],kMaplyBackgroundColor:[UIColor redColor],kMaplyJustify: kMaplyTextJustifyCenter}];
 }
 
