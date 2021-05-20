@@ -37,17 +37,31 @@ import javax.microedition.khronos.egl.EGLDisplay;
  * It can be a standalone object, doing offline rendering or it can be attached
  * to a BaseController and used to manage that controller's rendering.
  */
+@SuppressWarnings({"unused", "UnusedReturnValue", "RedundantSuppression"})
 public class RenderController implements RenderControllerInterface
 {
     public static final String kToolkitDefaultTriangleNoLightingProgram = "Default Triangle;lighting=no";
 
     // Draw priority defaults
-    public static final int ImageLayerDrawPriorityDefault = 100;
-    public static final int FeatureDrawPriorityBase = 20000;
-    public static final int MarkerDrawPriorityDefault = 40000;
-    public static final int LabelDrawPriorityDefault = 60000;
-    public static final int ParticleDrawPriorityDefault = 1000;
-    public static final int VectorDrawPriorityDefault = 50000;
+    public static final int StarsDrawPriorityDefault = 0;                 // kMaplyStarsDrawPriorityDefault
+    public static final int SunDrawPriorityDefault = 2;                   // kMaplySunDrawPriorityDefault
+    public static final int MoonDrawPriorityDefault = 3;                  // kMaplyMoonDrawPriorityDefault
+    public static final int AtmosphereDrawPriorityDefault = 10;           // kMaplyAtmosphereDrawPriorityDefault
+    /// Where we start image layer draw priorities
+    public static final int ImageLayerDrawPriorityDefault = 100;          // kMaplyImageLayerDrawPriorityDefault
+    /// We'll start filling in features right around here
+    public static final int FeatureDrawPriorityBase = 20000;              // kMaplyFeatureDrawPriorityBase
+    public static final int StickerDrawPriorityDefault = 30000;           // kMaplyStickerDrawPriorityDefault
+    public static final int MarkerDrawPriorityDefault = 40000;            // kMaplyMarkerDrawPriorityDefault
+    public static final int VectorDrawPriorityDefault = 50000;            // kMaplyVectorDrawPriorityDefault
+    public static final int ParticleSystemDrawPriorityDefault = 55000;    // kMaplyParticleSystemDrawPriorityDefault
+    public static final int LabelDrawPriorityDefault = 60000;             // kMaplyLabelDrawPriorityDefault
+    public static final int LoftedPolysDrawPriorityDefault = 70000;       // kMaplyLoftedPolysDrawPriorityDefault
+    public static final int ShapeDrawPriorityDefault = 80000;             // kMaplyShapeDrawPriorityDefault
+    public static final int BillboardDrawPriorityDefault = 90000;         // kMaplyBillboardDrawPriorityDefault
+    public static final int ModelDrawPriorityDefault = 100000;            // kMaplyModelDrawPriorityDefault
+    // Unlikely to have any draw priorities here or beyond.
+    public static final int MaxDrawPriorityDefault = 100100;              // kMaplyMaxDrawPriorityDefault
 
     Point2d frameSize = new Point2d(0.0, 0.0);
 
@@ -161,7 +175,6 @@ public class RenderController implements RenderControllerInterface
         // Need a task manager that just runs things on the current thread
         //  after setting the proper context for rendering
         TaskManager taskMan = (run, mode) -> {
-            EGL10 egl1 = (EGL10) EGLContext.getEGL();
             setEGLContext(offlineGLContext);
             run.run();
         };
@@ -381,8 +394,9 @@ public class RenderController implements RenderControllerInterface
         running = false;
 
         // Kill the shaders here because they don't do well being finalized
-        for (Shader shader : shaders)
+        for (Shader shader : shaders) {
             shader.dispose();
+        }
         shaders.clear();
 
         if (vecManager != null)
@@ -420,7 +434,16 @@ public class RenderController implements RenderControllerInterface
 
         texManager = null;
 
-        offlineGLContext = null;
+        if (offlineGLContext != null) {
+            if (offlineGLContext.eglSurface != null && offlineGLContext.eglContext != null) {
+                setEGLContext(offlineGLContext);
+                EGL10 egl = (EGL10) EGLContext.getEGL();
+                egl.eglDestroySurface(display, offlineGLContext.eglSurface);
+            }
+            offlineGLContext = null;
+        }
+
+        teardownNative();
     }
 
     /** RenderControllerInterface **/
@@ -515,6 +538,12 @@ public class RenderController implements RenderControllerInterface
         taskMan.addTask(() -> {
             ChangeSet changes = new ChangeSet();
 
+            int priority = markerInfo.getDrawPriority();
+            if (priority <= 0) {
+                priority = LabelDrawPriorityDefault;
+            }
+            markerInfo.setDrawPriority(priority + screenObjectDrawPriorityOffset);
+
             // Convert to the internal representation of the engine
             ArrayList<InternalMarker> intMarkers = new ArrayList<>(markers.size());
             for (ScreenMarker marker : markers)
@@ -588,6 +617,12 @@ public class RenderController implements RenderControllerInterface
         // Do the actual work on the layer thread
         taskMan.addTask(() -> {
             ChangeSet changes = new ChangeSet();
+
+            int priority = markerInfo.getDrawPriority();
+            if (priority <= 0) {
+                priority = LabelDrawPriorityDefault;
+            }
+            markerInfo.setDrawPriority(priority + screenObjectDrawPriorityOffset);
 
             // Convert to the internal representation of the engine
             ArrayList<InternalMarker> intMarkers = new ArrayList<>(markers.size());
@@ -669,6 +704,10 @@ public class RenderController implements RenderControllerInterface
         taskMan.addTask(() -> {
             ChangeSet changes = new ChangeSet();
 
+            if (markerInfo.getDrawPriority() <= 0) {
+                markerInfo.setDrawPriority(MarkerDrawPriorityDefault);
+            }
+
             // Convert to the internal representation of the engine
             ArrayList<InternalMarker> intMarkers = new ArrayList<>(markers.size());
             for (Marker marker : markers)
@@ -744,6 +783,10 @@ public class RenderController implements RenderControllerInterface
         taskMan.addTask(() -> {
             ChangeSet changes = new ChangeSet();
 
+            if (labelInfo.getDrawPriority() <= 0) {
+                labelInfo.setDrawPriority(LabelDrawPriorityDefault);
+            }
+
             // Convert to the internal representation for the engine
             ArrayList<InternalLabel> intLabels = new ArrayList<>(labels.size());
             for (ScreenLabel label : labels)
@@ -806,6 +849,10 @@ public class RenderController implements RenderControllerInterface
         taskMan.addTask(() -> {
             ChangeSet changes = new ChangeSet();
 
+            if (labelInfo.getDrawPriority() <= 0) {
+                labelInfo.setDrawPriority(LabelDrawPriorityDefault);
+            }
+
             // Convert to the internal representation for the engine
             ArrayList<InternalLabel> intLabels = new ArrayList<>(labels.size());
             for (ScreenMovingLabel label : labels) {
@@ -864,6 +911,10 @@ public class RenderController implements RenderControllerInterface
 
         // Do the actual work on the layer thread
         taskMan.addTask(() -> {
+            if (vecInfo.getDrawPriority() <= 0) {
+                vecInfo.setDrawPriority(VectorDrawPriorityDefault);
+            }
+
             // Vectors are simple enough to just add
             ChangeSet changes = new ChangeSet();
             long vecId = vecManager.addVectors(vecs.toArray(new VectorObject[0]), vecInfo, changes);
@@ -918,6 +969,10 @@ public class RenderController implements RenderControllerInterface
 
         // Do the actual work on the layer thread
         taskMan.addTask(() -> {
+            if (loftInfo.getDrawPriority() <= 0) {
+                loftInfo.setDrawPriority(LoftedPolysDrawPriorityDefault);
+            }
+
             // Vectors are simple enough to just add
             ChangeSet changes = new ChangeSet();
             long loftID = loftManager.addPolys(vecs.toArray(new VectorObject[0]), loftInfo, changes);
@@ -987,6 +1042,10 @@ public class RenderController implements RenderControllerInterface
 
         // Do the actual work on the layer thread
         taskMan.addTask(() -> {
+            if (vecInfo.getDrawPriority() <= 0) {
+                vecInfo.setDrawPriority(VectorDrawPriorityDefault);
+            }
+
             // Vectors are simple enough to just add
             ChangeSet changes = new ChangeSet();
             long[] vecIDs = vecObj.getVectorIDs();
@@ -1026,6 +1085,10 @@ public class RenderController implements RenderControllerInterface
 
         // Do the actual work on the layer thread
         taskMan.addTask(() -> {
+            if (wideVecInfo.getDrawPriority() <= 0) {
+                wideVecInfo.setDrawPriority(VectorDrawPriorityDefault);
+            }
+
             // Vectors are simple enough to just add
             ChangeSet changes = new ChangeSet();
             long vecId = wideVecManager.addVectors(vecs.toArray(new VectorObject[0]), wideVecInfo, changes);
@@ -1076,6 +1139,10 @@ public class RenderController implements RenderControllerInterface
 
         // Do the actual work on the layer thread
         taskMan.addTask(() -> {
+            if (wideVecInfo.getDrawPriority() <= 0) {
+                wideVecInfo.setDrawPriority(VectorDrawPriorityDefault);
+            }
+
             // Vectors are simple enough to just add
             ChangeSet changes = new ChangeSet();
 
@@ -1158,6 +1225,10 @@ public class RenderController implements RenderControllerInterface
         taskMan.addTask(() -> {
             ChangeSet changes = new ChangeSet();
 
+            if (stickerInfo.getDrawPriority() <= 0) {
+                stickerInfo.setDrawPriority(StickerDrawPriorityDefault);
+            }
+
             // Stickers are added one at a time for some reason
             long stickerID = stickerManager.addStickers(stickers.toArray(new Sticker[0]), stickerInfo, changes);
 
@@ -1220,6 +1291,10 @@ public class RenderController implements RenderControllerInterface
 
         // Do the actual work on the layer thread
         taskMan.addTask(() -> {
+            if (info.getDrawPriority() <= 0) {
+                info.setDrawPriority(BillboardDrawPriorityDefault);
+            }
+
             ChangeSet changes = new ChangeSet();
 
             // Have to set the shader ID if it's not already
@@ -1278,7 +1353,7 @@ public class RenderController implements RenderControllerInterface
      * @param ptList The points to add.
      * @param geomInfo Parameters to set things up with.
      * @param mode Where to execute the add.  Choose ThreadAny by default.
-     * @return This represents the geometry points for later modifictation or deletion.
+     * @return This represents the geometry points for later modification or deletion.
      */
     public ComponentObject addPoints(final List<Points> ptList,final GeometryInfo geomInfo,RenderController.ThreadMode mode)
     {
@@ -1286,6 +1361,10 @@ public class RenderController implements RenderControllerInterface
 
         // Do the actual work on the layer thread
         taskMan.addTask(() -> {
+            if (geomInfo.getDrawPriority() <= 0) {
+                geomInfo.setDrawPriority(ParticleSystemDrawPriorityDefault);
+            }
+
             ChangeSet changes = new ChangeSet();
 
             // Stickers are added one at a time for some reason
@@ -1711,7 +1790,7 @@ public class RenderController implements RenderControllerInterface
         if (cInfo != null)
         {
             if (!egl.eglMakeCurrent(display, cInfo.eglSurface, cInfo.eglSurface, cInfo.eglContext)) {
-                Log.d("Maply", "Failed to make current context:" + Integer.toHexString(egl.eglGetError()));
+                Log.d("Maply", "Failed to make current context: " + Integer.toHexString(egl.eglGetError()));
                 return false;
             }
 
@@ -1781,7 +1860,7 @@ public class RenderController implements RenderControllerInterface
     public native void setupShadersNative();
     public native void setViewNative(View view);
     public native void setClearColor(float r,float g,float b,float a);
-    protected native boolean teardown();
+    private native boolean teardownNative();
     protected native boolean resize(int width,int height);
     protected native void render();
     protected native boolean hasChanges();
@@ -1789,6 +1868,10 @@ public class RenderController implements RenderControllerInterface
     public native void addLight(DirectionalLight light);
     public native void replaceLights(DirectionalLight[] lights);
     protected native void renderToBitmapNative(Bitmap outBitmap);
+
+    private int screenObjectDrawPriorityOffset = 1000000;
+    public int getScreenObjectDrawPriorityOffset() { return screenObjectDrawPriorityOffset; }
+    public void setScreenObjectDrawPriorityOffset(int offset) { screenObjectDrawPriorityOffset = offset; }
 
     public void finalize()
     {
