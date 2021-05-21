@@ -47,7 +47,7 @@
                                                        target:self
                                                      selector:@selector(animationCallback)
                                                      userInfo:nil
-                                                      repeats:NO];
+                                                      repeats:YES];
 }
 
 - (void)setUpWithGlobe:(WhirlyGlobeViewController *)vc
@@ -106,7 +106,8 @@
         _wideVecObj = [self.baseViewController addWideVectors:@[vec] desc:@{
             kMaplyEnable: @(YES),
             kMaplyColor: [UIColor redColor],
-            kMaplyVecWidth: @(5.0)
+            kMaplyVecWidth: @(5.0),
+//            kMaplyWideVecImpl: kMaplyWideVecImplPerf
         }];
     }
     if (!_wideTexVecObj)
@@ -127,15 +128,16 @@
         [self.baseViewController changeVector:_vecObj desc:@{
             kMaplyEnable: @((arc4random()%10) ? YES : NO),
             kMaplyColor: [ChangeVectorsTestCase randomColor],
+            kMaplyVecWidth: @((arc4random()%330) / 4.0f),
             kMaplyDrawPriority: @(kMaplyVectorDrawPriorityDefault)
         }];
     }
     if (_wideVecObj)
     {
         [self.baseViewController changeVector:_wideVecObj desc:@{
-            kMaplyEnable: @((arc4random()%10) ? YES : NO),
+//            kMaplyEnable: @((arc4random()%10) ? YES : NO),
             kMaplyColor: [ChangeVectorsTestCase randomColor],
-            kMaplyVecWidth: @((arc4random()%40) / 4.0f),
+            kMaplyVecWidth: @((arc4random()%330) / 4.0f),
             kMaplyDrawPriority: @(kMaplyVectorDrawPriorityDefault)
         }];
     }
@@ -144,7 +146,8 @@
         [self.baseViewController changeVector:_wideTexVecObj desc:@{
             kMaplyEnable: @((arc4random()%10) ? YES : NO),
             kMaplyColor: [ChangeVectorsTestCase randomColor],
-            kMaplyVecWidth: @((arc4random()%40) / 4.0f),
+            kMaplyVecWidth: @((arc4random()%330) / 4.0f),
+            kMaplyVecTexture: _dashedLineTex,
             kMaplyDrawPriority: @(kMaplyVectorDrawPriorityDefault)
         }];
     }
