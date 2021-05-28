@@ -107,7 +107,7 @@
             kMaplyEnable: @(YES),
             kMaplyColor: [UIColor redColor],
             kMaplyVecWidth: @(5.0),
-//            kMaplyWideVecImpl: kMaplyWideVecImplPerf
+            kMaplyWideVecImpl: kMaplyWideVecImplPerf
         }];
     }
     if (!_wideTexVecObj)

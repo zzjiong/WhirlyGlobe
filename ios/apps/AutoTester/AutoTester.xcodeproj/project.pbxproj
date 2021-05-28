@@ -527,6 +527,7 @@
 		8F981DB91DE3577C00717DF1 /* ne_10m_roads.prj in Resources */ = {isa = PBXBuildFile; fileRef = 8F981DB31DE3577C00717DF1 /* ne_10m_roads.prj */; };
 		8F981DBB1DE3577C00717DF1 /* ne_10m_roads.shp in Resources */ = {isa = PBXBuildFile; fileRef = 8F981DB51DE3577C00717DF1 /* ne_10m_roads.shp */; };
 		8F981DBC1DE3577C00717DF1 /* ne_10m_roads.shx in Resources */ = {isa = PBXBuildFile; fileRef = 8F981DB61DE3577C00717DF1 /* ne_10m_roads.shx */; };
+		A68642B5265B4CC90071BC01 /* ZBAA.mbtiles in Resources */ = {isa = PBXBuildFile; fileRef = A68642B3265B4CC90071BC01 /* ZBAA.mbtiles */; };
 		A69F631D25934DA1000CFDAC /* MbtilesLoadTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = A69F631C25934DA1000CFDAC /* MbtilesLoadTestCase.m */; };
 		A6A121B225942DA700AE0632 /* CrashProblem.m in Sources */ = {isa = PBXBuildFile; fileRef = A6A121B125942DA700AE0632 /* CrashProblem.m */; };
 		A6A121B92594A42D00AE0632 /* world9.mbtiles in Resources */ = {isa = PBXBuildFile; fileRef = A6A121B82594A42D00AE0632 /* world9.mbtiles */; };
@@ -1151,6 +1152,7 @@
 		8F981DB51DE3577C00717DF1 /* ne_10m_roads.shp */ = {isa = PBXFileReference; lastKnownFileType = file; name = ne_10m_roads.shp; path = ../../../resources/vectors/ne_10m_roads/ne_10m_roads.shp; sourceTree = "<group>"; };
 		8F981DB61DE3577C00717DF1 /* ne_10m_roads.shx */ = {isa = PBXFileReference; lastKnownFileType = file; name = ne_10m_roads.shx; path = ../../../resources/vectors/ne_10m_roads/ne_10m_roads.shx; sourceTree = "<group>"; };
 		8FE129181CDFB3B8004744FC /* TestCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestCell.swift; sourceTree = "<group>"; };
+		A68642B3265B4CC90071BC01 /* ZBAA.mbtiles */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ZBAA.mbtiles; sourceTree = "<group>"; };
 		A69F631B25934DA1000CFDAC /* MbtilesLoadTestCase.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MbtilesLoadTestCase.h; sourceTree = "<group>"; };
 		A69F631C25934DA1000CFDAC /* MbtilesLoadTestCase.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MbtilesLoadTestCase.m; sourceTree = "<group>"; };
 		A6A121B025942DA700AE0632 /* CrashProblem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CrashProblem.h; sourceTree = "<group>"; };
@@ -1503,6 +1505,7 @@
 			isa = PBXGroup;
 			children = (
 				A6B41489259577F2000D883E /* gjx.png */,
+				A68642B3265B4CC90071BC01 /* ZBAA.mbtiles */,
 				A6A121B82594A42D00AE0632 /* world9.mbtiles */,
 				2B6611E825D1C967009D228F /* airways */,
 				2BD914E7256F1F8A00E724A8 /* Assets.xcassets */,
@@ -2352,6 +2355,7 @@
 				88FF5CF01BC31D6D002F15CE /* moon.png in Resources */,
 				88FF5E361BC31D95002F15CE /* ECU.geojson in Resources */,
 				88E4B8CF1B83B6AB0050D21B /* LaunchScreen.xib in Resources */,
+				A68642B5265B4CC90071BC01 /* ZBAA.mbtiles in Resources */,
 				88FF5ED31BC31D95002F15CE /* TLS.geojson in Resources */,
 				88FF5E821BC31D95002F15CE /* MDV.geojson in Resources */,
 				88FF5E021BC31D95002F15CE /* ATG.geojson in Resources */,
