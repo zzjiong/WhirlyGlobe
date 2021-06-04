@@ -1,20 +1,30 @@
+#!/bin/bash
 # Most of this borrowed from http://www.cocoanetics.com/2010/04/making-your-own-iphone-frameworks/
 
-#!/bin/bash
+BUILDTYPE=${1:-build}
+
+TARGETOPTS="-target WhirlyGlobeMaplyComponent -scheme WhirlyGlobeMaplyComponent"
+SIM_CONFIG="-sdk iphonesimulator -arch x86_64"
+DEV_CONFIG="-sdk iphoneos"
 
 # Locations for build products
-BUILT_PRODUCTS_SIMULATOR=`xcodebuild -target WhirlyGlobeMaplyComponent -scheme WhirlyGlobeMaplyComponent -configuration Release -sdk iphonesimulator -showBuildSettings OTHER_CFLAGS='-fembed-bitcode' | grep -m 1 "BUILT_PRODUCTS_DIR" | grep -oEi "\/.*"`
+BUILT_PRODUCTS_SIMULATOR=`xcodebuild $TARGETOPTS -configuration Release -sdk iphonesimulator -showBuildSettings OTHER_CFLAGS='-fembed-bitcode' | grep -m 1 "BUILT_PRODUCTS_DIR" | grep -oEi "\/.*"`
 echo Simulator products: $BUILT_PRODUCTS_SIMULATOR
 
-BUILT_PRODUCTS_IPHONEOS=`xcodebuild -target WhirlyGlobeMaplyComponent -scheme WhirlyGlobeMaplyComponent -configuration Release -sdk iphoneos -showBuildSettings OTHER_CFLAGS='-fembed-bitcode' | grep -m 1 "BUILT_PRODUCTS_DIR" | grep -oEi "\/.*"`
+BUILT_PRODUCTS_IPHONEOS=`xcodebuild $TARGETOPTS -configuration Release -sdk iphoneos -showBuildSettings OTHER_CFLAGS='-fembed-bitcode' | grep -m 1 "BUILT_PRODUCTS_DIR" | grep -oEi "\/.*"`
 echo iPhoneOS products: $BUILT_PRODUCTS_IPHONEOS
 
-# simulator build disabled for now to stay under CI time limit
-echo Building for simulator...
-DEST="platform=iOS Simulator,name=iPad (8th generation)"
-xcodebuild -target WhirlyGlobeMaplyComponent -scheme WhirlyGlobeMaplyComponent -configuration Archive -sdk iphonesimulator -destination "$DEST" OTHER_CFLAGS='-fembed-bitcode' build
+echo Available Simulator Destinations:
+xcodebuild $TARGETOPTS $SIM_CONFIG -configuration Release -showdestinations
+
+#DEST="platform=iOS Simulator,name=iPhone 12"
+#echo Building for $DEST ...
+# Can't specify an architecture and a destination at the same time
+echo Building for simulator
+xcodebuild $TARGETOPTS -configuration Archive $SIM_CONFIG OTHER_CFLAGS='-fembed-bitcode' $BUILDTYPE
+
 echo Building for iPhoneOS
-xcodebuild -target WhirlyGlobeMaplyComponent -scheme WhirlyGlobeMaplyComponent -configuration Archive -sdk iphoneos -DONLY_ACTIVE_ARCH=NO OTHER_CFLAGS='-fembed-bitcode' build
+xcodebuild $TARGETOPTS -configuration Archive $DEV_CONFIG -DONLY_ACTIVE_ARCH=NO OTHER_CFLAGS='-fembed-bitcode' $BUILDTYPE
 
 echo Constructing Framework...
 

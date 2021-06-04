@@ -80,6 +80,7 @@
     
     NSMutableArray *mvObjectArr = [NSMutableArray array];
     NSMutableArray *labelArr = [NSMutableArray array];
+    NSMutableArray *markerArr = [NSMutableArray array];
     
     NSArray *jsonDicArr = @[@{@"jsonStr":jsonStr1,@"name":@"ULAANBAATAR FIR"},@{@"jsonStr":jsonStr2,@"name":@"ZLHW FIR"}];
     for (NSDictionary *jsonDic in jsonDicArr) {
@@ -89,13 +90,20 @@
         [mvObject subdivideToGlobe:0.0001];
         [mvObjectArr addObject:mvObject];
         
-        NSString *name = jsonDic[@"name"];
-        MaplyScreenLabel *label = [[MaplyScreenLabel alloc] init];
-        label.text = name;
-//        label.loc = mvObject.center;
-        label.layoutVec = mvObject;
-        label.layoutImportance = 1;
-        [labelArr addObject:label];
+//        NSString *name = jsonDic[@"name"];
+//        MaplyScreenLabel *label = [[MaplyScreenLabel alloc] init];
+//        label.text = name;
+////        label.loc = mvObject.center;
+//        label.layoutVec = mvObject;
+//        label.layoutImportance = 1;
+//        [labelArr addObject:label];
+        
+        MaplyScreenMarker *marker = [[MaplyScreenMarker alloc] init];
+        marker.loc = [mvObject center];
+        marker.size = CGSizeMake(24.0, 24.0);
+        marker.image = [UIImage imageNamed:@"residential.png"];
+        marker.layoutVec = mvObject;
+        [markerArr addObject:marker];
     }
     
     [globeVC addWideVectors:mvObjectArr desc:@{kMaplyMinVis:@(0),kMaplyMaxVis : @(2),kMaplyColor:[UIColor redColor],kMaplyVecWidth: @(3.0),kMaplySelectable:@(YES)} mode:MaplyThreadAny];
@@ -103,6 +111,12 @@
                                              kMaplyTextLayoutSpacing: @100.0,
 //                                             kMaplyTextLayoutRepeat: @1,
                                              kMaplyJustify: kMaplyTextJustifyCenter}];
+    [globeVC addScreenMarkers:markerArr desc:@{kMaplyTextLayoutSpacing: @100.0,
+                                               kMaplyTextLayoutOffset: @-30.0,
+//                                               kMaplyTextLayoutDebug: @YES,
+//                                               kMaplyTextLayoutRepeat: @1
+                                               
+    }];
 }
     
 @end
