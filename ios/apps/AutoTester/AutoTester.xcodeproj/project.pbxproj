@@ -1356,6 +1356,7 @@
 		88BF115A1BCDA9530002205E /* testCases */ = {
 			isa = PBXGroup;
 			children = (
+				2BF29B8E24D226B000553963 /* LegendViewController.swift */,
 				A6A121B025942DA700AE0632 /* CrashProblem.h */,
 				A6A121B125942DA700AE0632 /* CrashProblem.m */,
 				A69F631B25934DA1000CFDAC /* MbtilesLoadTestCase.h */,
@@ -1481,7 +1482,6 @@
 				886FCCC21BA73C1D00494BB0 /* StartupViewController.swift */,
 				8FE129181CDFB3B8004744FC /* TestCell.swift */,
 				2BF29B8B24D2268200553963 /* LegendViewController.storyboard */,
-				2BF29B8E24D226B000553963 /* LegendViewController.swift */,
 				88BF115A1BCDA9530002205E /* testCases */,
 				31D3287B262FADF100456B93 /* TestTileImageFetcher.swift */,
 			);

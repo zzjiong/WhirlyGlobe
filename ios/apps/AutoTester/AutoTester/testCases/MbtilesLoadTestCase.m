@@ -128,7 +128,7 @@
 //        fetcher.darkMode = YES;
     }
     MaplySamplingParams *params = [[MaplySamplingParams alloc] init];
-//    params.forceMinLevel = false;
+    params.forceMinLevel = false;
     params.minZoom = 0;
     params.maxZoom = [fetcher maxZoom];
     params.coordSys = [[MaplySphericalMercator alloc] initWebStandard];
